@@ -16,7 +16,7 @@ const app = express();
 app.use(express.json())
 
 app.get('/', async (req, res) => {
-  let markdownDir = path.resolve(process.cwd() + "/markdown")
+  let markdownDir = path.join(__dirname, "..", "markdown")
   try{
     let file  = await readdir(markdownDir)  
     res.json({markdown: file});
@@ -34,10 +34,10 @@ app.get('/api/posts', (req, res) => {
 
 app.post('/file', async (req, res) => {
   
-  let { content, filenName } = req.body
+  let { content, fileName } = req.body
 
   let data = "Hello this is file"
-  let p = path.resolve(process.cwd() + `/markdown/${filenName}`)  
+  let p =  path.join(__dirname, "..", `markdown/${fileName}`)  
   try{
     let file  = await writeFile(p, JSON.stringify(content))  
     res.json({message: "new file created.", filenName: p});
@@ -49,7 +49,8 @@ app.post('/file', async (req, res) => {
 
 app.get('/file/:filename', async (req, res) => {
  
-  let p = path.resolve(process.cwd() + `/markdown/${req.params.filename}`)  
+  
+  let p = path.join(__dirname, "..", `/markdown/${req.params.filename}`)  
 
   try{
     let content  = await readFileSync(p, "utf-8")  

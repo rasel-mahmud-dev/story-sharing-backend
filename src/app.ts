@@ -10,12 +10,13 @@ const HOST = process.env.HOST
 // App
 const app = express();
 app.get('/', (req, res) => {
-  res.send('Hello World - NodeJS is running on FlashDrive!');
+  res.send('Hi');
 });
 
 app.get('/api/posts', (req, res) => {
   res.send([{name: "Rasel"}]);
 });
+
 
 
 

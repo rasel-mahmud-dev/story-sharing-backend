@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Node.js on Qoddi",
   "author": "First Last <first.last@example.com>",
-  "main": "app.js",
+  "main": "dist/app.js",
   "scripts": {
     "start": "node dist/app.js",
     "build": "tsc",

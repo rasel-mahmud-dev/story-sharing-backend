@@ -4,9 +4,8 @@
 import express from 'express';
 import path from 'path'
 
-import { writeFile, readdir } from "fs/promises"
-import { readFile } from 'fs';
-import { readFileSync } from 'node:fs';
+import { writeFile, readdir, readFile } from "fs/promises"
+
 
 const PORT = process.env.PORT || 8080
 const HOST = process.env.HOST
@@ -16,7 +15,7 @@ const app = express();
 app.use(express.json())
 
 app.get('/', async (req, res) => {
-  let markdownDir = path.join(__dirname, "..", "markdown")
+  let markdownDir = path.resolve(process.cwd() + "/markdown")
   try{
     let file  = await readdir(markdownDir)  
     res.json({markdown: file});
@@ -34,10 +33,10 @@ app.get('/api/posts', (req, res) => {
 
 app.post('/file', async (req, res) => {
   
-  let { content, fileName } = req.body
+  let { content, filenName } = req.body
 
   let data = "Hello this is file"
-  let p =  path.join(__dirname, "..", `markdown/${fileName}`)  
+  let p = path.resolve(process.cwd() + `/markdown/${filenName}`)  
   try{
     let file  = await writeFile(p, JSON.stringify(content))  
     res.json({message: "new file created.", filenName: p});
@@ -49,11 +48,10 @@ app.post('/file', async (req, res) => {
 
 app.get('/file/:filename', async (req, res) => {
  
-  
-  let p = path.join(__dirname, "..", `/markdown/${req.params.filename}`)  
+  let p = path.resolve(process.cwd() + `/markdown/${req.params.filename}`)  
 
   try{
-    let content  = await readFileSync(p, "utf-8")  
+    let content  = await readFile(p, "utf-8")  
     res.send(content);
 
   } catch(ex){

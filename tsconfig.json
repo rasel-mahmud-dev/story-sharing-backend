@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    //    "module": "ESNext",
+    "strict": false,
+    "noImplicitAny": false,
+    "module": "commonjs",
+    "target": "es6",
+    "rootDir": "src",
+    "allowJs": true,
+    "esModuleInterop": true,
+    "sourceRoot": "./src",
+    "inlineSourceMap": true,
+    "resolveJsonModule": true,
+    "outDir": "dist",
+    "lib": ["es2021"]
+  },
+  "include": ["src/"],
+  "ts-node": {
+    "compilerOptions": {
+      "module": "CommonJS"
+    }
+  }
+}
+
+// "engines": {
+//   "node": "16.12.0"
+// },

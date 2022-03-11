@@ -5,3 +5,5 @@
 This repository can be built on [Qoddi](https://qoddi.com) as an example app.
 
 More informations about NodeJS support on Qoddi can be <a href="https://devcenter.qoddi.com/node-js/">found here</a>
+
+"node": "16.12.0"

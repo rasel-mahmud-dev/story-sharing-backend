@@ -3,6 +3,7 @@
 
 import express from 'express';
 import path from 'path'
+import cors from  "cors"
 
 import { writeFile, readdir, readFile } from "fs/promises"
 
@@ -13,6 +14,18 @@ const HOST = process.env.HOST
 // App
 const app = express();
 app.use(express.json())
+
+const whitelist = ['http://example1.com', 'http://localhost:3000']
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (whitelist.indexOf(origin) !== -1) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  }
+}
+app.use(cors(corsOptions))
 
 app.get('/', async (req, res) => {
   let markdownDir = path.resolve(process.cwd() + "/markdown")

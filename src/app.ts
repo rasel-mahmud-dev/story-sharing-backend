@@ -1,6 +1,5 @@
 'use strict';
 
-
 import express from 'express';
 import path from 'path'
 import cors from  "cors"
@@ -51,7 +50,7 @@ app.use(cors(corsOptions))
 
 routes(app)
 
-//
+
 // app.get('/', async (req, res) => {
 //   let markdownDir = path.resolve(process.cwd() + "/markdown")
 //   try{

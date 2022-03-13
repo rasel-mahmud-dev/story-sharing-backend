@@ -28,6 +28,7 @@ passport.use(new Strategy({
 				facebookId: profile.id,
 				password: "",
 				first_name: profile.displayName,
+				username: profile.displayName,
 				last_name: "",
 				created_at: Date.now(),
 				updated_at: Date.now(),

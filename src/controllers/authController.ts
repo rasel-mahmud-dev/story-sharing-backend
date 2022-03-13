@@ -11,7 +11,6 @@ import {uploadImage} from "../cloudinary";
 
 import replaceOriginalFilename from "../utilities/replaceOriginalFilename";
 import {createHash, hashCompare} from "../hash";
-import {getHashData} from "../utilities/redisUtils";
 import {mongoConnect, redisConnect} from "../database";
 import sendMail from "../utilities/sendMail";
 import User from "../models/User";
@@ -38,6 +37,7 @@ export const createNewUser = async (req, res, next)=> {
         avatar: "",
         first_name,
         last_name,
+        username: first_name +  last_name ? last_name : "",
         email,
         password: hash
       })
@@ -147,6 +147,25 @@ export const getUser = async (req: Request, res: Response)=> {
     
   } catch (ex){
   
+  } finally {
+    client?.close()
+  }
+}
+
+export const getUsers = async (req: Request, res: Response)=> {
+  const {adminId} = req.body
+  let client;
+  try {
+    let isAdmin = await User.findOne({_id: new ObjectId(adminId), role: "admin"})
+    if (isAdmin) {
+      const users = await User.find({}, { projection: { password: 0 }})
+      response(res, 200, { users: users })
+    } else {
+      response(res,  409, { message: "Access denied" })
+    }
+  } catch (ex){
+    errorConsole(ex)
+    response(res,  500, { message: "Internal error" })
   } finally {
     client?.close()
   }
@@ -287,18 +306,6 @@ export const cookieAdd = async (req: Request, res: Response)=> {
    
  }
 
- export const loginWithGoogle= async (req: Request, res: Response)=>{
-  const CLIENT_ID = "8420172243-49atfe73poamebd1c7hvhapat0fsvv06.apps.googleusercontent.com"
-  const CLIENT_SECRET = "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"
-  const REDIRECT_URL = "http://localhost:3300/authorized"
-   
-   try {
-  
-  } catch (ex){
-  
-  }
-  
- }
  
 export const updateProfile = async (req, res)=>{
   
@@ -326,7 +333,7 @@ export const updateProfile = async (req, res)=>{
          user.description = about_you
        }
        if (username) {
-         // user.username = username
+         user.username = username
        }
        if (first_name) {
          user.first_name = first_name
@@ -514,27 +521,69 @@ export const getAuthPassword = async (req, res)=>{
 
 export const sendPasswordResetMail = async (req, res)=>{
   let client;
+  const expiredTime = '1min'
   try{
+    const {to} = req.body
     client = await redisConnect()
     // send a link and a secret code with expire date...
-    let users = await getHashData("users", client)
-    
-    const { to } = req.body
-    let findIndex = users.findIndex(u=>u.email === to)
-    if(findIndex === -1){
+    let user: any = await User.findOne({email: to}, {})
+    if(!user){
       response(res, 404, "This email not registered yet")
       return
     }
-    let token = createToken(users[findIndex].id, users[findIndex].email, '1min')
+    let token = createToken(user._id, user.email, expiredTime)
     let info: any = await sendMail({
       to: to,
       from: process.env.ADMIN_EMAIL,
       subject: "Change Password",
       html: `
-        <div>
-          <h1>Change Password DEV-STORY application</h1>
-            <a href="${process.env.NODE_ENV === "development" ? "http://localhost:5500" : "https://rsl-my-blog.netlify.app" }/#/auth/join/new-password/${token}">click to set new password</a>
-          </div>
+        <!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  
+          <style type="text/css">
+              .bg{
+                font-family: Roboto,serif;
+                box-sizing: border-box;
+                width: 100%;
+                height: max-content;
+                background-image: linear-gradient(0deg, rgba(255, 70, 117, 0.92), rgba(255, 58, 241, 0.69));
+              }
+              .panel{
+                background: rgba(255, 255, 255, 0.73);
+              }
+              
+            </style>
+      </head>
+      <body>
+          
+            <div class="bg" style="padding: 50px">
+              <h1 style="text-align: center; color: white; margin: 0px 0; margin-bottom: 10px; font-weight: 600">Change Password DEV-STORY application</h1>
+              <div style="background: rgba(230,230,230,0.439); padding: 60px; max-width: 60%; margin: auto; border-radius: 4px ">
+                <h2 style="text-align: start; color: white; margin: 20px 0; font-weight: 500">Hey ${user.first_name}</h2>
+                <p style="text-align: start; color: white; margin: 0px 0; font-weight: 400">Someone (hopefully you) ! has requested to change your old password.
+                  Please click the link below to change your password now</p>
+                  <button style="width: max-content; padding:5px 10px; color: white; outline: none; border:none; background: rgba(255,255,255,0.36); border-radius: 4px; margin-top: 40px ">
+                  <a href="${process.env.NODE_ENV === "development" ? "http://localhost:5500" : "https://rsl-my-blog.netlify.app" }/#/auth/join/new-password/${token}">CHANGE MY PASSWORD </a>
+                  </button>
+              
+                <p style="text-align: start; color: white; margin: 20px 0; font-weight: 500">Please note that your password will not change unless you click the link above and
+                  create a new one.</p>
+                <p style="text-align: start; color: white; margin: 20px 0; font-weight: 500">This link will expire in 30 minutes. If your link has expired, you can always</p>
+              
+                <div>
+                  <p>Sincerely,</p>
+                  <h4>Rasel Mahmud</h4>
+                </div>
+                
+              </div>
+            </div>
+          </body>
+</html>
       `
     })
 
@@ -613,6 +662,8 @@ export const changePassword = async (req, res)=>{
     client?.quit()
   }
 }
+
+
 
 
 

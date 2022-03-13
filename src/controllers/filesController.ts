@@ -1,91 +1,36 @@
 import response from "../response";
-import fs, {createReadStream, WriteStream} from "fs";
+import fs from "fs";
 import formidable from 'formidable';
 import path from "path";
-import {cp, readdir, readFile, rm, stat, writeFile} from "fs/promises";
+import {cp, readdir, stat, writeFile} from "fs/promises";
 import replaceOriginalFilename from "../utilities/replaceOriginalFilename";
 import errorConsole from "../logger/errorConsole";
 import { Request, Response } from  "express"
+const archiver = require('archiver');
 
-import tar from "tar"
-
-
-// import {deleteFile, getFiles} from "../dropbox";
 
 export const makeDataBackup  = async (req, res)=>{
-  function createBackup() {
-    return new Promise(async (s, e)=> {
   
-      var archiver = require('archiver');
+  const archive = archiver('zip', {
+    zlib: {level: 9} // Sets the compression level.
+  });
   
-      const archive = archiver('zip', {
-        zlib: {level: 9} // Sets the compression level.
-      });
-      
-// good practice to catch warnings (ie stat failures and other non-blocking errors)
-      archive.on('warning', function (err) {
-        if (err.code === 'ENOENT') {
-          // log warning
-        } else {
-          errorConsole(err)
-          // response(res, 500, err.message)
-          res.end()
-          // throw error
-          throw err;
-        }
-      });
+  archive.on('error', function (err) {
+    errorConsole(err)
+    res.end()
+  });
 
-// good practice to catch this error explicitly
-      archive.on('error', function (err) {
-        errorConsole(err)
-        res.end()
-        // response(res, 500, err.message)
-        // throw err;
-      });
+  // pipe to response data to the file
+  archive.pipe(res);
+  const markdownDir = process.cwd() + "/markdown"
   
-      // pipe archive data to the file
-      archive.pipe(res);
+  archive.directory(markdownDir, "markdown");
   
-      // append a file from stream
-      try{
-        let d = path.resolve(`./index.ts`)
-        archive.append(createReadStream(d), {name: "h.md"});
-        archive.finalize();
-        // res.end()
-        
-        // let files = await readdir(path.resolve(process.cwd() + `/markdown/h.md`))
-        // files.forEach((fileName, i) => {
-        //   (async function () {
-        //     try {
-        //       let eachFilePath = path.resolve(process.cwd() + `/markdown/${fileName}`)
-        //       let stream = createReadStream(eachFilePath)
-        //       archive.append(stream, {name: fileName});
-        //
-        //       if ((i + 1) >= files.length) {
-        //         archive.finalize();
-        //       }
-        //     } catch (ex){
-        //       errorConsole(ex)
-        //       res.end()
-        //       e(new Error(ex.message))
-        //     }
-        //   }())
-        // })
-      } catch (ex){
-        errorConsole(ex)
-        res.end()
-        // response(res, 500, ex.message)
-        e(new Error(ex.message))
-      }
-    })
-  }
-  // await createBackup()
-  
-  
-  let files = path.resolve(process.cwd() + `/markdown/h.md`)
-  
+  await archive.finalize()
+  // after finalize archive
+  // end streaming...
+   res.end()
 }
-
 
 export const getFileContent = async (req, res)=>{
   let filePath = req.query.path
@@ -219,10 +164,20 @@ export const  uploadFile = async (req, res)=>{
     try {
       if(fields.dirType === "markdown"){
         let {newPath, name} = await replaceOriginalFilename(files, "markdown")
-        let uploadedPath = path.resolve("src/markdown/" +  name)
+        let uploadedPath = path.resolve(process.cwd() + "/markdown/" +  name)
         await cp(newPath, uploadedPath,{force: true})
-  
+        let info  = await stat(uploadedPath)
+        
+        let fileInfo = {
+          dir: false,
+          name: name,
+          path: "markdown/" + name,
+          size: info.size,
+          modifyTime: info.mtime
+        }
+       
         response(res, 201, {
+          ...fileInfo,
           message: "Markdown File upload Success",
           uploadedPath: uploadedPath
         })

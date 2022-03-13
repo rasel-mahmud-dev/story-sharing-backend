@@ -20,6 +20,7 @@ class User extends Base{
   googleId?: string;
   first_name: string;
   last_name: string;
+  username: string;
   email: string;
   password: string;
   created_at: string;
@@ -27,7 +28,7 @@ class User extends Base{
   avatar: string;
   role?: string
   
-  constructor({ _id = "", role= "user", facebookId=null,  googleId=null, first_name, last_name, email, password, created_at, updated_at, avatar }) {
+  constructor({ _id = "", role= "user", facebookId=null,  googleId=null, first_name, last_name, email, username, password, created_at, updated_at, avatar }) {
     super("users")
     this._id = "",
     this.facebookId = facebookId,
@@ -37,6 +38,7 @@ class User extends Base{
     this.email = email
     this.password = password
     this.created_at = created_at
+    this.username = username
     this.updated_at = updated_at
     this.avatar = avatar
     this.role = role
@@ -51,6 +53,7 @@ class User extends Base{
       let { tableName, _id,  ...otherValue } = this
       let user = Joi.object({
         first_name: Joi.string().required(),
+        username: Joi.string().required(),
         last_name: Joi.optional(),
         facebookId: Joi.optional(),
         googleId: Joi.optional(),

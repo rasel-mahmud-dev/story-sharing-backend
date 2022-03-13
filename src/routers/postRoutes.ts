@@ -1,10 +1,6 @@
 
 import getAuthID from "../middlewares/getAuthID"
-
 import controller from "../controllers"
-
-// import {deletePost, getTopHitsPosts} from "../controllers/postController";
-
 
 const postRoutes = (app)=>{
   
@@ -28,17 +24,19 @@ const postRoutes = (app)=>{
   // body => { path: string }
   app.post("/api/raw-md-content", controller.postController.getRawMarkdownContent)
 
-  app.post("/api/toggle-like", getAuthID, controller.postController.handleToggleLike)
+  app.post("/api/post/add-like", getAuthID, controller.likeController.addLike)
+  app.post("/api/post/remove-like", getAuthID, controller.likeController.removeLike)
 
 
-  app.post("/api/comment", getAuthID, controller.commentController.createComment)
-
-
-  // ?post_id=1&comment_id=1
-  app.delete("/api/comment", getAuthID, controller.commentController.deleteComment)
+  app.post("/api/post/add-comment", getAuthID, controller.commentController.createComment)
+  
+  app.post("/api/post/fetch-comments", getAuthID, controller.commentController.findComments)
+  
+  app.post("/api/post/delete-comment", getAuthID, controller.commentController.deleteComment)
 
   app.post("/api/file-content", controller.postController.getFileContent)
-  }
+  
+}
   
   
   export default postRoutes

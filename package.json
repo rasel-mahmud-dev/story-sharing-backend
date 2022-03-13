@@ -10,7 +10,7 @@
     "dev": "set NODE_ENV=development&ts-node-dev --respawn --transpile-only src/app.ts"
   },
   "engines": {
-  
+    "node": "16.12.0"
   },
   "dependencies": {
     "archiver": "^5.3.0",
@@ -22,11 +22,9 @@
     "dotenv": "^16.0.0",
     "express": "^4.16.1",
     "formidable": "^2.0.1",
-    "googleapis": "^96.0.0",
     "highlight.js": "^11.4.0",
     "joi": "^17.6.0",
     "jsonwebtoken": "^8.5.1",
-    "markdown-it": "^12.3.2",
     "marked": "^4.0.12",
     "mongodb": "^4.4.1",
     "nodemailer": "^6.7.2",
@@ -35,9 +33,7 @@
     "passport-google-oauth20": "^2.0.0",
     "redis": "^4.0.4",
     "shortid": "^2.2.16",
-    "slugify": "^1.6.5",
-    "tar": "^6.1.11",
-    "tar-stream": "^2.2.0"
+    "slugify": "^1.6.5"
   },
   "devDependencies": {
     "@types/node": "^16.11.7",

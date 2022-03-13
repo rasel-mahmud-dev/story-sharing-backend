@@ -1,5 +1,6 @@
 import errorConsole from "../logger/errorConsole";
 import {mongoConnect} from "../database";
+import {AggregateOptions, Document, Filter, FindOptions, UpdateFilter} from "mongodb";
 
 
 class Base {
@@ -132,7 +133,7 @@ class Base {
 //   })
 // }
   
-  static update(find, query){
+  static update(filter: Filter<Document>, update: UpdateFilter<Document>){
     return new Promise(async (resolve, reject)=> {
       let client;
       try {
@@ -140,7 +141,7 @@ class Base {
         let {c: collection, client: cc } = await mongoConnect(tableName)
         client = cc
         
-        let cursor = await collection?.updateOne(find, query)
+        let cursor = await collection?.updateOne(filter, update)
         if(cursor.modifiedCount > 0){
           resolve(true)
         } else {
@@ -176,16 +177,16 @@ class Base {
 //
 // }
   
-  static findOne(match={}, selectFields) {
+  static findOne(filter: Filter<Document>, options?: FindOptions) {
     return new Promise(async (resolve, reject) => {
       let client
       try{
         let tableName = this.tableName
         let {c: collection, client: cc } = await mongoConnect(tableName)
         client = cc;
-        let user = await collection.findOne(match)
-        if(user){
-          resolve(user)
+        let data = await collection.findOne(filter, options)
+        if(data){
+          resolve(data)
         } else {
           resolve(null)
         }
@@ -198,14 +199,14 @@ class Base {
     })
   }
   
-  static removeOne(match={}){
+  static removeOne(filter: Filter<Document>){
     return new Promise(async (resolve, reject) => {
       let client;
       try{
         let {c: Collection, client: cc} = await mongoConnect(this.tableName)
         client = cc
         
-        let doc = await Collection.deleteOne(match)
+        let doc = await Collection.deleteOne(filter)
         if(doc.deletedCount){
           resolve(true)
         }else {
@@ -221,18 +222,20 @@ class Base {
     })
   }
   
-  static async find(match={}){
+  static async find(query?:Filter<Document>, options?: FindOptions){
     return new Promise(async (resolve, reject)=>{
       let client;
       try {
-        let { c: User, client: cc } = await mongoConnect(Base.tableName)
+        let tableName = this.tableName
+        let { c: User, client: cc } = await mongoConnect(tableName)
         client = cc;
-        let cursor = User.find(match)
+        let cursor = User.find(query ? query : {}, options ? options : {})
         
         let users = []
         await cursor.forEach(usr=>{
           users.push(usr)
         })
+        resolve(users)
         resolve(users)
       } catch (ex){
         errorConsole(ex)
@@ -244,13 +247,13 @@ class Base {
     })
   }
   
-  static aggregate(pipeline){
+  static aggregate(pipeline: Document[], options?: AggregateOptions){
     return new Promise(async (resolve, reject)=>{
       let client;
       try {
         let { c: collection, client: cc } = await mongoConnect(this.tableName)
         client = cc
-        let cursor = collection?.aggregate(pipeline)
+        let cursor = collection?.aggregate(pipeline, options)
         
         let products = []
         await cursor.forEach(p=>{

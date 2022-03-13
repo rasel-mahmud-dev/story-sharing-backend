@@ -9,13 +9,15 @@ export default (app)=>{
 
   app.post("/api/auth/login", controllers.authController.loginUser)
   app.get("/api/users/:id", controllers.authController.getUser)
+  
+  app.post("/api/auth/users", getAuthID, controllers.authController.getUsers)
 
   app.get("/api/auth/current-auth", controllers.authController.loginViaToken)
-  app.post("/api/auth/users", controllers.authController.createNewUser)
+  app.post("/api/auth/register", controllers.authController.createNewUser)
 
   app.post("/api/add-cookie", controllers.authController.cookieAdd)
 
-  //
+
   // app.get('/auth/callback/google', passport.authenticate('google'), function(req, res) {
   //   if(req.user){
   //     let queryParams = ''

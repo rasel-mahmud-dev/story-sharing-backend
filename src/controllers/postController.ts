@@ -319,28 +319,35 @@ export const getPost = async (req, res, next) =>{
   let client;
   try {
     let posts: any = [];
-    if(post_id) {
-      posts =  await Post.aggregate([
-        { $match: {_id: new ObjectId(post_id)}},
-        { $lookup: {
-            from: "users",
-            localField: "author_id",
-            foreignField: "_id",
-            as: "author"
-          }},
-        { $unwind: { path: "$author", preserveNullAndEmptyArrays: true } },
-        { $lookup: {
-            from: "hits",
-            localField: "_id",
-            foreignField: "post_id",
-            as: "hits"
-          }},
-        { $unwind: { path: "$hits", preserveNullAndEmptyArrays: true } },
-      ])
-    } else {
-      // fPost = db.get("posts").find({slug: slug}).value()
+    if(!post_id) {
+      return response(res, 404, "post not found")
     }
-  
+    
+    posts =  await Post.aggregate([
+      { $match: {_id: new ObjectId(post_id)}},
+      { $lookup: {
+          from: "users",
+          localField: "author_id",
+          foreignField: "_id",
+          as: "author"
+        }},
+      { $unwind: { path: "$author", preserveNullAndEmptyArrays: true } },
+      { $lookup: {
+          from: "hits",
+          localField: "_id",
+          foreignField: "post_id",
+          as: "hits"
+        }},
+      { $unwind: { path: "$hits", preserveNullAndEmptyArrays: true } },
+      { $lookup: {
+          from: "likes",
+          localField: "_id",
+          foreignField: "post_id",
+          as: "like"
+      }},
+      { $unwind: { path: "$like", preserveNullAndEmptyArrays: true } }
+    ])
+    
     await increasePostVisitorCount(post_id)
     //   .then(d=>{
     //   console.log(d)
@@ -349,8 +356,7 @@ export const getPost = async (req, res, next) =>{
     if (posts.length > 0) {
       response(res, 200, {
         post: {
-          ...posts[0],
-          comments: []
+          ...posts[0]
         }
       })
 

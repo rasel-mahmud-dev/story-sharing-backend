@@ -8,13 +8,6 @@ dist
 
 
 .env
-markdown/**
+markdown
 src/drive
 src/dropbox
-
-
-
-
-
-
-"d"

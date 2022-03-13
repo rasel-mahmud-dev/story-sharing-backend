@@ -1,9 +1,6 @@
 
-
 import controllers from "../controllers"
 import getAuthID from "../middlewares/getAuthID";
-import {deletedFile} from "../controllers/filesController";
-
 
 export default (app)=>{
   

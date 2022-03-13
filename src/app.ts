@@ -34,8 +34,12 @@ const corsOptions = {
     if (whitelist.indexOf(origin) !== -1) {
       callback(null, true)
     } else {
-      // callback(null, true) // anyone can access this apis
-      callback(new Error('Not allowed by CORS'))
+      if(process.env.NODE_ENV === "development"){
+        callback(null, true)
+      } else {
+        // callback(null, true) // anyone can access this apis
+        callback(new Error('Not allowed by CORS'))
+      }
     }
   }
 }
@@ -96,7 +100,6 @@ if(process.env.NODE_ENV === "development") {
 //   }
 // });
 
-
 // app.post('/api/markdown/content', async (req, res) => {
 //
 //   const { filePath  } = req.body
@@ -126,7 +129,6 @@ if(process.env.NODE_ENV === "development") {
 //     res.json({message: ex.message});
 //   }
 // });
-
 
 
 mongoConnect().then(async res=>{

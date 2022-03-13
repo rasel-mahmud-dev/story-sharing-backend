@@ -27,15 +27,15 @@ app.use(express.json())
 
 app.use(bodyParser.urlencoded({extended: false}))
 
-const whitelist = ['http://localhost:5500', 'http://localhost:3000', 'http://192.168.43.170:3000']
+const whitelist = [process.env.FRONTEND]
 const corsOptions = {
   credentials: true,
   origin: function (origin, callback) {
     if (whitelist.indexOf(origin) !== -1) {
       callback(null, true)
     } else {
-      callback(null, true) // anyone can access this apis
-      // callback(new Error('Not allowed by CORS'))
+      // callback(null, true) // anyone can access this apis
+      callback(new Error('Not allowed by CORS'))
     }
   }
 }

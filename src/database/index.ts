@@ -5,13 +5,20 @@ import {MongoClient, Db, Collection, ServerApiVersion, ObjectId} from 'mongodb';
 import Post from "../models/Post";
 
 
-export function redisConnect(){
+export function redisConnect(isCloud = false){
   return new Promise( async (resolve, reject)=>{
 
     let client;
 
     if(process.env.NODE_ENV === "development"){
-      client = await createClient();
+      if(isCloud) {
+        client = await createClient( {
+          url: `redis://:${process.env.REDIS_PASSWORD}@${process.env.REDIS_ENDPOINT}:${process.env.REDIS_PORT}`
+          // url: `redis://:${process.env.REDIS_PASSWORD}@${process.env.REDIS_ENDPOINT}:${process.env.REDIS_PORT}`
+        });
+      } else {
+        client = await createClient();
+      }
     } else {
       client = await createClient( {
         url: `redis://:${process.env.REDIS_PASSWORD}@${process.env.REDIS_ENDPOINT}:${process.env.REDIS_PORT}`
@@ -21,11 +28,12 @@ export function redisConnect(){
 
     await client.on('error', (err) =>{
       // console.log('---------Redis Client Error-----------')
+      return reject("redis connection error")
     });
-    console.log("redis connected...")
+    
     await client.connect();
+    console.log("redis connected...")
     resolve(client)
-
   })
 }
 
@@ -33,6 +41,7 @@ export function dbSync(connection: {
   from: string,
   dbName: string,
   to: string,
+  clearRedisKey: string[],
   collections: string[]
 }){
 
@@ -58,9 +67,7 @@ export function dbSync(connection: {
             return other
           })
           
-          // if( (index+ 1) === connection.collections.length ) {
-            
-            
+        
             const clientTo = new MongoClient(connection.to, {
               // @ts-ignore
               useNewUrlParser: true, useUnifiedTopology: true,
@@ -74,7 +81,35 @@ export function dbSync(connection: {
             await toCOl.deleteMany({})
             let r = await toCOl.insertMany(fetchData[colName])
             console.log(r)
-          // }
+  
+          if( (index+ 1) === connection.collections.length ) {
+            try {
+              const redisClient = await redisConnect()
+              const redisClientCloud = await redisConnect(true)
+  
+              connection.clearRedisKey.forEach((redisKey, o) => {
+                (async function () {
+                  // @ts-ignore
+                  let result = await redisClient.del(redisKey)
+                  // @ts-ignore
+                  result = await redisClientCloud.del(redisKey)
+                  console.log(result)
+      
+                  if ((o + 1) === connection.clearRedisKey.length) {
+                    
+                    // @ts-ignore
+                    await redisClient.quit()
+                    // @ts-ignore
+                    await redisClientCloud.quit()
+                  }
+                }())
+              })
+            } catch (ex){
+              console.log(ex.message)
+            }
+           
+          }
+  
         } catch(ex){
           console.log(ex)
         }
@@ -101,12 +136,14 @@ function findAll(collection){
   })
 }
 
-//// local to cloud
+
+// local to cloud
 // dbSync({
 //   to: `mongodb+srv://rasel:${process.env.MONGODB_PASS}@cluster0.4ywhd.mongodb.net/dev-story?retryWrites=true&w=majority`,
 //   from: "mongodb://127.0.0.1:27017",
 //   dbName: "dev-story",
-//   collections: ["posts", "users", "hits"]
+//   collections: ["posts", "users", "hits"],
+//   clearRedisKey: ["posts", "admin_posts", "users_posts"],
 // }).then(r=>{
 //   console.log(r)
 // })

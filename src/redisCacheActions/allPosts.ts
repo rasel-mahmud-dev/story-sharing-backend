@@ -2,7 +2,7 @@ import {redisConnect} from "../database";
 import errorConsole from "../logger/errorConsole";
 
 export function pullPostsFromCache(key: string = "posts"){
-
+  
   return new Promise(async (resolve, reject)=>{
     let client;
     try {
@@ -23,7 +23,7 @@ export function pullPostsFromCache(key: string = "posts"){
       }
       resolve(postArr)
     } catch (ex){
-      resolve(null)
+      reject(new Error("redis connection fail.."))
     } finally {
       await client?.quit()
     }
@@ -55,7 +55,7 @@ export function pushPostsIntoCache(key: string = "posts", posts: {}[]){
       
     } catch (ex){
       errorConsole(ex)
-      resolve(null)
+      reject(new Error("redis connection fail.."))
     } finally {
       client?.quit()
     }

@@ -14,4 +14,5 @@ function routes (app){
   appAdminRoutes(app)
 }
 
+module.exports = routes
 export default routes

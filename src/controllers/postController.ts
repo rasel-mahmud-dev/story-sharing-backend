@@ -1,8 +1,6 @@
 
 import response from "../response";
 import errorConsole from "../logger/errorConsole";
-// import MarkdownIt from 'markdown-it'
-// import {deleteFile, downloadFile, getFileMeta, updateFile, uploadFile2} from "../dropbox";
 import slugify from "slugify";
 import Post from "../models/Post";
 import {ObjectId} from "mongodb";
@@ -19,10 +17,11 @@ import {
   pushUserPostsIntoCache,
   setUsersPostsIntoCache
 } from "../redisCacheActions/usersPosts";
+
 import {pullPostsFromCache, pushPostsIntoCache} from "../redisCacheActions/allPosts";
+
 import {
   deleteAdminPostIntoCache,
-  pushAdminPostsIntoCache,
   setAdminPostsIntoCache
 } from "../redisCacheActions/adminPosts";
 
@@ -48,6 +47,7 @@ export const getPosts = (req, res, next) =>{
     let client;
     try {
       
+      
       /** get users posts from redis cache using author id */
       if(author_id){
         const userPosts = await pullUserPostsFromCache("users_posts", author_id)
@@ -64,11 +64,12 @@ export const getPosts = (req, res, next) =>{
             { $unwind: { path: "$author", preserveNullAndEmptyArrays: true } },
             { $project: { author: { password: 0, created_at: 0, updated_at: 0, description: 0} } }
           ])
-  
-          // store cache this users posts
-          const inserted = await pushUserPostsIntoCache("users_posts", author_id, p)
+          
+          if(p && Array.isArray(p) && p.length > 0 ) {
+            // store cache this users posts
+            const inserted = await pushUserPostsIntoCache("users_posts", author_id, p)
+          }
           response(res, 200, {posts: p})
-  
           
           
           /// make cache admin posts
@@ -81,10 +82,9 @@ export const getPosts = (req, res, next) =>{
       
       } else {
   
-  
+        
         /** Get all posts from redis-server   */
         const postArr = await pullPostsFromCache("posts")
-        
         if(postArr) {
           response(res, 200, {posts: postArr})
     
@@ -101,12 +101,14 @@ export const getPosts = (req, res, next) =>{
             { $unwind: { path: "$author", preserveNullAndEmptyArrays: true } },
             { $project: { author: { password: 0, created_at: 0, updated_at: 0, description: 0} } }
           ])
-          const inserted = await pushPostsIntoCache("posts", p)
+          if(p && Array.isArray(p) && p.length > 0 ) {
+            const inserted = await pushPostsIntoCache("posts", p)
+          }
           response(res, 200, {posts: p})
         }
       }
     } catch (ex){
-      response(res, 500, "Internal Error")
+      response(res, 500, ex.message || "Internal Error")
     } finally {
       client?.quit()
     }

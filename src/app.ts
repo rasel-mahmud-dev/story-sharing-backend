@@ -1,30 +1,24 @@
 'use strict';
-
 import express from 'express';
-import path from 'path'
 import cors from  "cors"
-import MarkdownIt from 'markdown-it'
-import { writeFile, readdir, readFile } from "fs/promises"
-import hljs from 'highlight.js'
-import {mongoConnect} from "./database";
+
 import logLine from "./console"
 
-import routes from "../src/routers"
 
 const bodyParser = require('body-parser');
 
 const PORT = process.env.PORT || 8080
-const HOST = process.env.HOST
-
-
+const HOST = process.env.HOST || "localhost"
 
 require('dotenv').config()
+
+import {mongoConnect} from "./database";
 
 
 logLine()
 
-require("../src/passport/oauth")
-require("../src/passport/facebook")
+import("./passport/oauth")
+import("./passport/facebook")
 
 
 // App
@@ -47,8 +41,14 @@ const corsOptions = {
 }
 app.use(cors(corsOptions))
 
-
-routes(app)
+if(process.env.NODE_ENV === "development") {
+  const routes = require("../src/routers")
+  routes(app)
+} else {
+  console.log("dsf")
+  const routes = require("./routers")
+  routes(app)
+}
 
 
 // app.get('/', async (req, res) => {
@@ -97,35 +97,35 @@ routes(app)
 // });
 
 
-app.post('/api/markdown/content', async (req, res) => {
-  
-  const { filePath  } = req.body
-
-  let p = path.resolve(process.cwd() + `/${filePath}`)
-
-  try{
-    let content  = await readFile(p, "utf-8")
-  
-    // node.js, "classic" way:
-    const md = new MarkdownIt({
-      highlight: function (str, lang) {
-        if (lang && hljs.getLanguage(lang)) {
-          try {
-            return hljs.highlight(str, { language: lang }).value;
-          } catch (__) {}
-        }
-    
-        return ''; // use external default escaping
-      }
-    });
-    const result = md.render(content);
-    
-    res.send(result);
-
-  } catch(ex){
-    res.json({message: ex.message});
-  }
-});
+// app.post('/api/markdown/content', async (req, res) => {
+//
+//   const { filePath  } = req.body
+//
+//   let p = path.resolve(process.cwd() + `/${filePath}`)
+//
+//   try{
+//     let content  = await readFile(p, "utf-8")
+//
+//     // node.js, "classic" way:
+//     const md = new MarkdownIt({
+//       highlight: function (str, lang) {
+//         if (lang && hljs.getLanguage(lang)) {
+//           try {
+//             return hljs.highlight(str, { language: lang }).value;
+//           } catch (__) {}
+//         }
+//
+//         return ''; // use external default escaping
+//       }
+//     });
+//     const result = md.render(content);
+//
+//     res.send(result);
+//
+//   } catch(ex){
+//     res.json({message: ex.message});
+//   }
+// });
 
 
 

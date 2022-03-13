@@ -40,6 +40,6 @@ const postRoutes = (app)=>{
   app.post("/api/file-content", controller.postController.getFileContent)
   }
   
-  module.exports = postRoutes
+  
   export default postRoutes
   

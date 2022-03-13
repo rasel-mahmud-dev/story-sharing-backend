@@ -15,7 +15,7 @@ passport.use(new Strategy({
 	async function(accessToken, refreshToken, profile, cb) {
 	
 	try{
-		let user  = await User.findOne({facebookId: profile.id}, {})
+		let user: any  = await User.findOne({facebookId: profile.id}, {})
 		if(user){
 			let token = createToken(user._id, user.email)
 			let { password, created_at, updated_at, ...other } = user

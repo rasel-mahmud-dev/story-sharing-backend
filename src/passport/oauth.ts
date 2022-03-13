@@ -21,7 +21,7 @@ passport.use(new GoogleStrategy({
 	async function(accessToken, refreshToken, profile, cb) {
 		try{
 			let email = profile.emails &&  profile.emails[0] && profile.emails[0].value
-			let user = await User.findOne({ $or: [{email: email}, {googleId: profile.id}] }, {})
+			let user: any = await User.findOne({ $or: [{email: email}, {googleId: profile.id}] }, {})
 			
 			if(user){
 				let token = createToken(user._id, user.email)

@@ -31,13 +31,15 @@ const whitelist = [process.env.FRONTEND]
 const corsOptions = {
   credentials: true,
   origin: function (origin, callback) {
-    if (whitelist.indexOf(origin) !== -1) {
+    if (whitelist.indexOf(origin) !== -1 || !origin) {
       callback(null, true)
     } else {
       if(process.env.NODE_ENV === "development"){
         callback(null, true)
       } else {
-        callback(null, true) // anyone can access this apis
+        // callback(null, true) // anyone can access this apis
+        
+        callback(null, false) // anyone can access this apis
         // callback(new Error('Not allowed by CORS'))
       }
     }

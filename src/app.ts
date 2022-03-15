@@ -8,7 +8,7 @@ import logLine from "./console"
 const bodyParser = require('body-parser');
 
 const PORT = process.env.PORT || 8080
-const HOST = process.env.HOST || "localhost"
+const HOST = process.env.HOST
 
 require('dotenv').config()
 
@@ -49,24 +49,15 @@ if(process.env.NODE_ENV === "development") {
   const routes = require("../src/routers")
   routes(app)
 } else {
-  console.log("dsf")
   const routes = require("./routers")
   routes(app)
 }
 
 
-// app.get('/', async (req, res) => {
-//   let markdownDir = path.resolve(process.cwd() + "/markdown")
-//   try{
-//     let file  = await readdir(markdownDir)
-//     res.json({markdown: file});
-//
-//   } catch(ex){
-//     res.json({message: ex.message});
-//   }
-//
-// });
-//
+app.get('/', (req, res) => {
+  res.send("Hi There!!")
+});
+
 // app.get('/api/posts', (req, res) => {
 //   res.send([{name: "Rasel"}]);
 // });

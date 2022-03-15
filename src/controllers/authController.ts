@@ -521,10 +521,9 @@ export const getAuthPassword = async (req, res)=>{
 
 export const sendPasswordResetMail = async (req, res)=>{
   let client;
-  const expiredTime = '1min'
+  const expiredTime = '30min'
   try{
     const {to} = req.body
-    client = await redisConnect()
     // send a link and a secret code with expire date...
     let user: any = await User.findOne({email: to}, {})
     if(!user){
@@ -598,10 +597,11 @@ export const sendPasswordResetMail = async (req, res)=>{
     if(ex.message === "jwt expired"){
       response(res, 409, "session timeout")
     } else {
+      console.log(ex)
       response(res, 500, "Network error")
     }
   } finally {
-    await client?.quit()
+  
   }
 }
 

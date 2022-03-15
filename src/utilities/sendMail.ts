@@ -5,8 +5,8 @@ function gmailTransport(){
   return nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: "me.hide009@gmail.com", //process.env.ADMIN_EMAIL,
-      pass: "EducationRY5" // process.env.ADMIN_PASSWORD
+      user: process.env.ADMIN_EMAIL,
+      pass: process.env.ADMIN_PASSWORD
     }
   })
 }

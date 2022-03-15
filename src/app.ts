@@ -37,8 +37,8 @@ const corsOptions = {
       if(process.env.NODE_ENV === "development"){
         callback(null, true)
       } else {
-        // callback(null, true) // anyone can access this apis
-        callback(new Error('Not allowed by CORS'))
+        callback(null, true) // anyone can access this apis
+        // callback(new Error('Not allowed by CORS'))
       }
     }
   }

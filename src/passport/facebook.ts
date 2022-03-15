@@ -4,7 +4,7 @@ import User from "../models/User";
 import {createToken} from "../jwt";
 
 // const FACEBOOK_APP_REDIRECT_URL = "http://localhost:8888/.netlify/functions/server/callback/facebook"
-const FACEBOOK_APP_REDIRECT_URL = process.env.BACKEND_URI + "/.netlify/functions/server/auth/callback/facebook"
+const FACEBOOK_APP_REDIRECT_URL = process.env.BACKEND_URI + "/auth/callback/facebook"
 
 passport.use(new Strategy({
 		clientID: process.env.FACEBOOK_APP_ID,

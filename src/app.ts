@@ -27,7 +27,7 @@ app.use(express.json())
 
 app.use(bodyParser.urlencoded({extended: false}))
 
-const whitelist = [process.env.FRONTEND]
+const whitelist = [process.env.FRONTEND, "https://rasel-mahmud-dev.github.io"]
 const corsOptions = {
   credentials: true,
   origin: function (origin, callback) {

@@ -27,7 +27,7 @@ app.use(express.json())
 
 app.use(bodyParser.urlencoded({extended: false}))
 
-const whitelist = [process.env.FRONTEND, "https://rasel-mahmud-dev.github.io"]
+const whitelist = [process.env.FRONTEND, "https://rasel-mahmud-dev.github.io", process.env.FRONTEND2,]
 const corsOptions = {
   credentials: true,
   origin: function (origin, callback) {
@@ -35,10 +35,8 @@ const corsOptions = {
       callback(null, true)
     } else {
       if(process.env.NODE_ENV === "development"){
-        callback(null, true)
+        callback(null, true) // anyone can access this apis when is development mode
       } else {
-        // callback(null, true) // anyone can access this apis
-        
         callback(null, false) // anyone can access this apis
         // callback(new Error('Not allowed by CORS'))
       }

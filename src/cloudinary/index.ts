@@ -1,3 +1,4 @@
+import saveLog from "../logger/saveLog";
 
 const { v2: cloudinary} = require("cloudinary");
 
@@ -22,11 +23,24 @@ export const uploadImage = (imagePath: string, dir?: string)=>{
         {
           use_filename: true,
           unique_filename: false,
-          folder: dir ? dir : ""
+          folder: dir ? dir : "",
+          overwrite: false
         })
       resolve(s)
     } catch (ex){
-      // console.log(ex)
+   
+      if(ex.message){
+        if(typeof ex.message === "string"){
+          saveLog(ex.message)
+        }
+      }
+      if(ex.error){
+        if(typeof ex.error === "string"){
+          saveLog(ex.error)
+        } else {
+          saveLog(ex.error?.message)
+        }
+      }
       reject(ex)
     }
   })

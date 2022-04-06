@@ -4,7 +4,33 @@ import {mongoConnect} from "../database";
 
 import Base from"./Base";
 import Joi from "joi";
-import {ObjectId} from "mongodb";
+
+
+export interface PostType {
+  _id: string
+  title: string
+  author_id: string
+  summary: string
+  created_at: string
+  updated_at: string
+  slug: string
+  cover?: string
+  path: string
+  tags: string[]
+}
+
+export interface PostWithAuthorType extends PostType{
+  author: {
+    _id: string,
+    first_name: string,
+    last_name: string,
+    email: string,
+    avatar: string,
+    role: string,
+    cover: string,
+    username: string,
+  }
+}
 
 
 class Post extends Base{

@@ -3,6 +3,7 @@ import errorConsole from "../logger/errorConsole";
 const { createClient } = require('redis');
 import {MongoClient, Db, Collection, ServerApiVersion, ObjectId} from 'mongodb';
 import Post from "../models/Post";
+import saveLog from "../logger/saveLog";
 
 
 export function redisConnect(isCloud = false){
@@ -27,8 +28,7 @@ export function redisConnect(isCloud = false){
     }
 
     await client.on('error', (err) =>{
-      // console.log('---------Redis Client Error-----------')
-      return reject("redis connection error")
+      reject(new Error("Redis Client Connection error"))
     });
     
     await client.connect();
@@ -231,7 +231,6 @@ export function mongoConnect(collectionName?: string){
   });
   
   return new Promise<{c?: Collection, client: MongoClient, db: Db}>(async (resolve, reject)=>{
-    
       try {
         // Connect the client to the server
         await client.connect();

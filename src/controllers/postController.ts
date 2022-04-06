@@ -2,7 +2,7 @@
 import response from "../response";
 import errorConsole from "../logger/errorConsole";
 import slugify from "slugify";
-import Post from "../models/Post";
+import Post, {PostWithAuthorType} from "../models/Post";
 import {ObjectId} from "mongodb";
 import Hits from "../models/Hits";
 import User from "../models/User";
@@ -24,6 +24,7 @@ import {
   deleteAdminPostIntoCache,
   setAdminPostsIntoCache
 } from "../redisCacheActions/adminPosts";
+import saveLog from "../logger/saveLog";
 
 
 
@@ -41,12 +42,12 @@ export const getP = (req, res)=>{
 
 
 export const getPosts = (req, res, next) =>{
- 
   (async function (){
+
+    
     const  { author_id } = req.query
     let client;
     try {
-      
       
       /** get users posts from redis cache using author id */
       if(author_id){
@@ -66,10 +67,11 @@ export const getPosts = (req, res, next) =>{
           ])
           
           if(p && Array.isArray(p) && p.length > 0 ) {
+            response(res, 200, {posts: p})
             // store cache this users posts
             const inserted = await pushUserPostsIntoCache("users_posts", author_id, p)
           }
-          response(res, 200, {posts: p})
+          return  response(res, 200, {posts: []})
           
           
           /// make cache admin posts
@@ -78,19 +80,20 @@ export const getPosts = (req, res, next) =>{
           //   await pushAdminPostsIntoRedisCache("admin_posts", admin._id, p)
           // }
           
+          
         }
       
       } else {
-  
         
         /** Get all posts from redis-server   */
         const postArr = await pullPostsFromCache("posts")
+
         if(postArr) {
-          response(res, 200, {posts: postArr})
-    
+          return response(res, 200, {posts: postArr})
+          
         } else {
           // if redis cache empty then push posts into redis...
-          let p: any = await Post.aggregate([
+          let p: PostWithAuthorType[] | {} = await Post.aggregate([
             { $match:  author_id ? { author_id: new ObjectId(author_id) } : {} },
             { $lookup: {
                 from: "users",
@@ -101,14 +104,19 @@ export const getPosts = (req, res, next) =>{
             { $unwind: { path: "$author", preserveNullAndEmptyArrays: true } },
             { $project: { author: { password: 0, created_at: 0, updated_at: 0, description: 0} } }
           ])
+          
           if(p && Array.isArray(p) && p.length > 0 ) {
+            response(res, 200, {posts: p})
             const inserted = await pushPostsIntoCache("posts", p)
+          } else {
+            response(res, 200, {posts: []})
           }
-          response(res, 200, {posts: p})
         }
       }
     } catch (ex){
-      response(res, 500, ex.message || "Internal Error")
+      
+      
+      // response(res, 500, ex.message || "Internal Error")
     } finally {
       client?.quit()
     }
@@ -260,6 +268,7 @@ export const getTopHitsPosts = async (req, res, next) =>{
 
   } catch (ex){
     errorConsole(ex)
+    saveLog(ex.message ? ex.message : "internal error")
     response(res, 500, ex.message)
   }
 
@@ -391,10 +400,14 @@ export const getPost = async (req, res, next) =>{
       //     })
       //
     } else {
+      
+      saveLog("post not found with id: " + post_id)
       response(res, 404, "post not found")
     }
 
   } catch (ex){
+    errorConsole(ex)
+    saveLog(ex.message ? ex.message : "internal error")
     response(res, 500, ex.message)
   } finally {
     client?.close()
@@ -424,7 +437,7 @@ export const addPost = async (req, res, next) =>{
     return response(res, 500, "incomplete post data")
   }
   if(user_id !== author_id){
-    return response(res, 500, {message: "you are unauthorized" })
+    return response(res, 401, {message: "unauthorized" })
   }
   
   // let id = shortid.generate();
@@ -490,6 +503,7 @@ export const addPost = async (req, res, next) =>{
     mdFilePath = await uploadMarkdownFile(mdFilePath, mdContent)
     
     if(!mdFilePath){
+      saveLog("markdown file create fail " + mdFilePath)
       return  response(res, 409, { message: "markdown file create fail" })
     }
     
@@ -547,6 +561,7 @@ export const addPost = async (req, res, next) =>{
 
   } catch (ex){
     errorConsole(ex)
+    saveLog(ex.message ? ex.message : "post create fail")
     response(res, 409, "post create fail")
 
   } finally {
@@ -624,6 +639,7 @@ export const updatePost = async (req, res, next) =>{
 
   } catch (ex){
     errorConsole(ex)
+    saveLog(ex.message ? ex.message : "Internal Error. Please Try Again")
     response(res, 500, "Internal Error. Please Try Again")
 
   } finally {
@@ -660,8 +676,7 @@ function increasePostVisitorCount(post_id){
       resolve(false)
     }
   })
-
-
+  
   // let postHit = await client.HGET("post_hits", post.id)
   // if(postHit){
   //
@@ -686,8 +701,7 @@ function increasePostVisitorCount(post_id){
   //
   //   }
   // }
-
-
+  
   //
   // let postHit = await client.HGET("post_hits", post.id)
   // if(postHit){
@@ -712,11 +726,6 @@ function increasePostVisitorCount(post_id){
   //     // console.log("increase post visit")
   //   }
   // }
-
-
-
-
-
 }
 
 
@@ -762,8 +771,7 @@ export const getPostContent = async (req, res, next) =>{
     // } else {
     //   response(res, 404, {mdContent: "", message: "Markdown content not found"})
     // }
-  
-    let content  = await readFile(p, "utf-8")
+    
   
     // node.js, "classic" way:
     // const md = new MarkdownIt({
@@ -802,10 +810,15 @@ export const getPostContent = async (req, res, next) =>{
       res.end()
     })
 
+    stream.on("error", (e)=>{
+      console.log(e)
+    })
+    
     
 
   } catch (ex){
     errorConsole(ex)
+    saveLog(ex.message ? ex.message : "Internal error")
     response(res, 500, ex.message)
   }
   finally {
@@ -817,14 +830,24 @@ export const getRawMarkdownContent = async (req, res, next) =>{
 
   try {
 
-    // let mdContent = await downloadFile(req.body.path)
-    //
-    // if (mdContent) {
-    //   response(res, 200, {mdContent: mdContent})
-    // } else {
-    //   response(res, 404, {mdContent: ""})
-    // }
-
+    const {filePath } = req.body
+    let p = path.resolve(process.cwd() + `/${filePath}`)
+    const stream = fs.createReadStream(p)
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+  
+    stream.on("data", (data)=>{
+      res.write(data)
+    })
+  
+    stream.on("end", ()=>{
+      res.end()
+    })
+  
+    stream.on("error", (e)=>{
+      saveLog("getRawMarkdownContent stream error " + e.message ? e.message: "")
+    })
+  
+  
   } catch (ex){
     errorConsole(ex)
     response(res, 404, {mdContent: ""})

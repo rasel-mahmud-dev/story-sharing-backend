@@ -15,6 +15,7 @@ import {mongoConnect, redisConnect} from "../database";
 import sendMail from "../utilities/sendMail";
 import User from "../models/User";
 import {ObjectId} from "mongodb";
+import saveLog from "../logger/saveLog";
 
 
 export const createNewUser = async (req, res, next)=> {
@@ -96,7 +97,7 @@ function loginUserHandler(email: string, password: string){
         let match = await hashCompare(password, user.password)
         if(!match)  return e(new Error("Password not match"))
       
-        let token = await createToken(user._id, user.email)
+        let token = await createToken(user._id, user.email, user.role ?  user.role : "user")
         let {password : sss, ...other} = user
         s({user: other, token})
       } else{
@@ -128,8 +129,8 @@ export const loginViaToken = async (req, res)=>{
       response(res, 404, {message: "User not found"})
     }
   } catch (ex){
-    errorConsole(ex)
-    return response(res, 500, ex.message)
+    saveLog(ex.message ? ex.message : "Server Error")
+    return response(res, 500, "Server error. try again")
   } finally {
     client?.close()
   }
@@ -237,17 +238,12 @@ async function setDayVisitor(client, ID){
   
 }
 
-
 export const cookieAdd = async (req: Request, res: Response)=> {
   
    let randomID = Math.ceil(Date.now() / 1000)
    let client;
-   
    try {
-     
      client = await redisConnect()
-     
-     
      
      let app_visitor_count = await client.sCard("app_visitor")
      let day_visitor_count = 0
@@ -288,24 +284,15 @@ export const cookieAdd = async (req: Request, res: Response)=> {
          })
        }
      }
-  
-  
-  
-  
-     
-  
-  
-  
    } catch (ex){
-     console.log(ex)
-     
+     saveLog(ex.message ? ex.message : "Server Error")
+     return response(res, 500, "Server error. try again")
    } finally {
       client?.quit()
    }
    
    
  }
-
  
 export const updateProfile = async (req, res)=>{
   
@@ -472,7 +459,8 @@ export const uploadMarkdownImage = (req, res, next)=>{
        console.log(err)
        return
      }
-  
+     
+     
      if(files && files.photo) {
   
        let tempDir = files.photo.filepath.replace(files.photo.newFilename, '')

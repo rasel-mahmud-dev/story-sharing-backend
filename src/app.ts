@@ -13,6 +13,8 @@ const HOST = process.env.HOST
 require('dotenv').config()
 
 import {mongoConnect} from "./database";
+import saveLog from "./logger/saveLog";
+import errorConsole from "./logger/errorConsole";
 
 
 logLine()
@@ -27,7 +29,7 @@ app.use(express.json())
 
 app.use(bodyParser.urlencoded({extended: false}))
 
-const whitelist = [process.env.FRONTEND, "https://rasel-mahmud-dev.github.io", process.env.FRONTEND2,]
+const whitelist = [process.env.FRONTEND, "https://rasel-mahmud-dev.github.io", process.env.FRONTEND2]
 const corsOptions = {
   credentials: true,
   origin: function (origin, callback) {
@@ -126,8 +128,8 @@ mongoConnect().then(async res=>{
   console.log("mongodb connected")
   await res.client.close()
 }).catch(err=>{
-  console.log("mongodb connection fail.")
-  
+  saveLog("mongodb connection fail.")
+  errorConsole("mongodb connection fail.")
 })
 
 app.listen(PORT, HOST);

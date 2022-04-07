@@ -155,7 +155,7 @@ export const getServerLog  = async (req, res)=>{
     // })
 
   } catch (ex){
-    saveLog(ex.message ? ex.message : "Server error")
+    saveLog(ex.message ? ex.message : "Server error", req.url, req.method)
     response(res, 404, "Server Error")
   }
 }
@@ -188,7 +188,7 @@ export const deleteServerLog  = async (req, res)=>{
     // })
 
   } catch (ex){
-    saveLog(ex.message ? ex.message : "Server error")
+    saveLog(ex.message ? ex.message : "Server error", req.url, req.method)
     response(res, 500, "Server Error")
   }
 }
@@ -270,7 +270,7 @@ export const addPortfolioTopPosts = async (req, res)=>{
         let doc = await client.hSet("top_admin_posts", post_id, JSON.stringify(p[0]))
         response(res, 201, {})
       } catch (ex){
-        saveLog(ex.message + " add-portfolio-top-post, Post not found post id " + post_id)
+        saveLog(ex.message + " add-portfolio-top-post, Post not found post id " + post_id, req.url, req.method)
         response(res, 500, {})
         return
       } finally {
@@ -287,7 +287,7 @@ export const addPortfolioTopPosts = async (req, res)=>{
     // response(res, 200, {})
     
   } catch (ex){
-    saveLog(ex.message + " add-portfolio-top-post, Post not found post id " + post_id)
+    saveLog(ex.message + " add-portfolio-top-post, Post not found post id " + post_id, req.url, req.method)
     response(res, 500, {})
   } finally {
   
@@ -334,14 +334,14 @@ export const addPortfolioAllPosts = async (req, res)=>{
         console.log(doc)
         response(res, 201, {})
       } catch (ex){
-        saveLog(ex.message + " add-portfolio-all-post, Post not found post id " + post_id)
+        saveLog(ex.message + " add-portfolio-all-post, Post not found post id " + post_id, req.url, req.method)
         response(res, 500, {})
         return
       } finally {
         await client?.quit()
       }
     } else {
-      saveLog("add-portfolio-all-post, Post not found post id " + post_id)
+      saveLog("add-portfolio-all-post, Post not found post id " + post_id,  req.url, req.method)
       response(res, 500, {})
       return
     }
@@ -351,7 +351,7 @@ export const addPortfolioAllPosts = async (req, res)=>{
     // response(res, 200, {})
     
   } catch (ex){
-    saveLog(ex.message + " add-portfolio-all-post, Post not found post id " + post_id)
+    saveLog(ex.message + " add-portfolio-all-post, Post not found post id " + post_id,  req.url, req.method)
     response(res, 500, {})
   } finally {
   
@@ -367,6 +367,7 @@ export const removePortfolioAllPosts = async (req, res)=>{
       response(res, 201)
     }
   } catch (ex){
+    saveLog(ex.message, req.url, req.method)
     console.log(ex)
   } finally {
     await client?.quit()

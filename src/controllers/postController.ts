@@ -607,28 +607,27 @@ export const updatePost = async (req, res, next) =>{
       try {
 
         if (mdContent) {
-          // let isUpdatedMdFile = await updateFile(mdContent, post.path)
-          let isUpdatedMdFile = false
-          if(isUpdatedMdFile){
+            await writeFile(post.path, mdContent)
             let isUpdated = await Post.update(
               {_id: new ObjectId(post._id)},
-              { $set: post }
+              {$set: post}
             )
-
-            if (isUpdated ) {
+  
+            if (isUpdated) {
               response(res, 200, {post: post})
             } else {
-              response(res, 500, "post update fail")
+              response(res, 500, "post update fail 1")
+              saveLog("Internal Error. Please Try Again", req.url, req.method)
             }
-          } else {
-            response(res, 400, "markdown update fail")
-          }
+            
         } else {
           response(res, 400, "markdown content required")
+          saveLog("markdown content required", req.url, req.method)
         }
 
       } catch (ex){
         response(res, 500, "post update fail")
+        saveLog(ex.message ? ex.message : "Internal Error. Please Try Again", req.url, req.method)
       }
 
 
@@ -639,7 +638,7 @@ export const updatePost = async (req, res, next) =>{
 
   } catch (ex){
     errorConsole(ex)
-    saveLog(ex.message ? ex.message : "Internal Error. Please Try Again")
+    saveLog(ex.message ? ex.message : "Internal Error. Please Try Again", req.url, req.method)
     response(res, 500, "Internal Error. Please Try Again")
 
   } finally {

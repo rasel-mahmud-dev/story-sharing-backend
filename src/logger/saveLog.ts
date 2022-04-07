@@ -2,16 +2,18 @@ import {appendFile} from "fs/promises";
 import fs from "fs";
 import path from "path";
 
-function saveLog(message: string)  {
+function saveLog(message: string, url?: string, method?: string )  {
   let date = new Date()
   let isPM  = "AM"
   let t= date.getHours()
   if (t > 11) {
     isPM = "PM"
   }
+
   
   let formatMessage = `-----------------------------------------------------------------------------------------------
-      Created on  ${date.toLocaleTimeString()} ${isPM} message:"  ${message}
+      ${url} - ${method} - ${date.toLocaleTimeString()}
+      ${message}
 -----------------------------------------------------------------------------------------------\n \n`
   
   let dir = path.join(__dirname, "..", "logs")
@@ -20,6 +22,7 @@ function saveLog(message: string)  {
     fs.mkdirSync(dir)
   }
   let filePath = path.resolve(dir  + "/"+ date.toISOString().slice(0, 10) + ".log")
+  console.log(formatMessage)
   appendFile(filePath, formatMessage).then(r => {})
     .catch(ex=>{
     console.log(ex)

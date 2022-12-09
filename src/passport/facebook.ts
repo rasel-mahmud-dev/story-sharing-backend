@@ -1,7 +1,10 @@
 import passport from  "passport"
 import { Strategy } from  "passport-facebook"
-import User from "../models/User";
 import {createToken} from "../jwt";
+import mongoose from "mongoose";
+
+
+const User  = mongoose.model("../models/User");
 
 // const FACEBOOK_APP_REDIRECT_URL = "http://localhost:8888/.netlify/functions/server/callback/facebook"
 const FACEBOOK_APP_REDIRECT_URL = process.env.BACKEND_URI + "/auth/callback/facebook"
@@ -30,8 +33,6 @@ passport.use(new Strategy({
 				first_name: profile.displayName,
 				username: profile.displayName,
 				last_name: "",
-				created_at: Date.now(),
-				updated_at: Date.now(),
 			}
 			user = new User(user)
 			user = await user.save(true)

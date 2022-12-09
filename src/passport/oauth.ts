@@ -1,6 +1,8 @@
+import mongoose from "mongoose";
+
 const passport = require("passport")
 
-import User from "../models/User";
+const User  = mongoose.model("../models/User");
 
 const {createToken} = require("../jwt");
 

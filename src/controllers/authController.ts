@@ -1,30 +1,29 @@
 import response from "../response";
 import {createToken, parseToken} from "../jwt";
 import errorConsole from "../logger/errorConsole";
-const shortid = require("shortid")
 
 import express, { Request, Response } from 'express';
-import getAppCookies from "../utilities/getAppCookies";
 import fs from "fs";
 import formidable from 'formidable';
 import {uploadImage} from "../cloudinary";
 
 import replaceOriginalFilename from "../utilities/replaceOriginalFilename";
 import {createHash, hashCompare} from "../hash";
-import {mongoConnect, redisConnect} from "../database";
 import sendMail from "../utilities/sendMail";
-import User from "../models/User";
+
 import {ObjectId} from "mongodb";
 import saveLog from "../logger/saveLog";
+import mongoose from "mongoose";
+import {RequestWithAuth} from "../types";
 
 
-export const createNewUser = async (req, res, next)=> {
+const User = mongoose.model("User")
+
+export const createNewUser = async (req: Request, res: Response)=> {
   let client;
   
   try {
     let {first_name, last_name, email, password } = req.body
-    // let {c: User, client, db } = await mongoConnect("users")
-    
     const {err, hash} = await createHash(password)
     
     let user: any = await User.findOne({email: email}, {})
@@ -33,8 +32,6 @@ export const createNewUser = async (req, res, next)=> {
       return
     } else {
       let newUser: any = new User({
-        created_at: new Date(),
-        updated_at: new Date(),
         avatar: "",
         first_name,
         last_name,
@@ -56,7 +53,6 @@ export const createNewUser = async (req, res, next)=> {
     }
     
   } catch (ex){
-    console.log(ex)
     errorConsole(ex)
     response(res, 500, {
       message: "Please Try Again",
@@ -67,7 +63,8 @@ export const createNewUser = async (req, res, next)=> {
     client?.quit()
   }
 }
-export const loginUser = async (req, res)=>{
+
+export const loginUser = async (req: Request, res: Response)=>{
   let client;
   try {
     let { email, password } = req.body
@@ -85,21 +82,19 @@ export const loginUser = async (req, res)=>{
   }
 }
 
-
 function loginUserHandler(email: string, password: string){
   return new Promise<{token: string, user: object}>(async (s, e)=>{
-    let client;
+    
     try {
-      let {c: UserCollection, client: cc } = await mongoConnect("users")
-      client = cc
-      let user: any = await UserCollection.findOne({email: email}, {})
+      let user: any = await User.findOne({email: email})
+      
       if(user){
         let match = await hashCompare(password, user.password)
         if(!match)  return e(new Error("Password not match"))
       
         let token = await createToken(user._id, user.email, user.role ?  user.role : "user")
-        let {password : sss, ...other} = user
-        s({user: other, token})
+        delete user._doc.password
+        s({user: user._doc, token})
       } else{
         e(new Error("login fail"))
       }
@@ -108,25 +103,24 @@ function loginUserHandler(email: string, password: string){
       errorConsole(ex)
       e(ex)
     } finally {
-      client?.close()
+    
     }
   })
 }
 
-export const loginViaToken = async (req, res)=>{
+export const loginViaToken = async (req: Request, res: Response)=>{
   let client;
   try {
-    let {c: UserCollection, client: cc } = await mongoConnect("users")
-    client = cc
     let token = req.headers["token"]
+   
     if(!token) return response(res, 404, "token not found")
-    let { id, email } =  await parseToken(token)
-    let user: any = await UserCollection.findOne({_id: new ObjectId(id)}, {})
+    let { userId, role } =  await parseToken(token)
+    let user: any = await User.findOne({_id: new ObjectId(userId)}).select("-password")
+
     if(user){
-    let {password, ...other} = user
-    response(res, 201, {...other})
-  } else {
-      response(res, 404, {message: "User not found"})
+      response(res, 201, user)
+    } else {
+        response(res, 404, {message: "User not found"})
     }
   } catch (ex){
     saveLog(ex.message ? ex.message : "Server Error")
@@ -137,29 +131,23 @@ export const loginViaToken = async (req, res)=>{
 }
 
 export const getUser = async (req: Request, res: Response)=> {
-  const {id} = req.params
-  let client;
+  const { id }  = req.params
   try {
-    let {c: UserCollection, client: cc } = await mongoConnect("users")
-    client = cc
-    let user = await UserCollection.findOne({_id: new ObjectId(id)})
-    let {password, role, ...o} = user
-    response(res, 200, {user: o})
+    let user = await User.findOne({_id: new ObjectId(id)}).select("-password")
+    response(res, 200, {user})
     
   } catch (ex){
   
   } finally {
-    client?.close()
   }
 }
 
 export const getUsers = async (req: Request, res: Response)=> {
   const {adminId} = req.body
-  let client;
   try {
     let isAdmin = await User.findOne({_id: new ObjectId(adminId), role: "admin"})
     if (isAdmin) {
-      const users = await User.find({}, { projection: { password: 0 }})
+      const users = await User.find({}).select("-password")
       response(res, 200, { users: users })
     } else {
       response(res,  409, { message: "Access denied" })
@@ -168,7 +156,6 @@ export const getUsers = async (req: Request, res: Response)=> {
     errorConsole(ex)
     response(res,  500, { message: "Internal error" })
   } finally {
-    client?.close()
   }
 }
 
@@ -177,12 +164,10 @@ export const getUserEmail = async (req: Request, res: Response)=> {
   let client;
   
   try {
-    let {c: UserCollection, client: cc } = await mongoConnect("users")
-    client = cc
-    let user = await UserCollection.findOne({email: email})
+    let user: any = await User.findOne({email: email})
     if(user) {
       // setTimeout(()=>{
-        response(res, 200, {user: { avatar: user.avatar }})
+        response(res, 200, {user: { avatar: user._doc.avatar }})
  
     } else {
       response(res, 404, "This email not yet registered")
@@ -243,47 +228,47 @@ export const cookieAdd = async (req: Request, res: Response)=> {
    let randomID = Math.ceil(Date.now() / 1000)
    let client;
    try {
-     client = await redisConnect()
-     
-     let app_visitor_count = await client.sCard("app_visitor")
-     let day_visitor_count = 0
-     
-     if (getAppCookies(req).browser_uuid) {
-       // response(res, 200, {message: "cookie already exists"})
-  
-       day_visitor_count = await setDayVisitor(client, getAppCookies(req).browser_uuid)
-       
-       response(res, 201, {
-         message: "cookie send",
-         day_visitor: day_visitor_count,
-         total_visitor: app_visitor_count,
-       })
-  
-     } else {
-       
-       // increase total visitor....
-       let isSet = await client.sAdd("app_visitor", randomID.toString())
-       if (isSet){
-         res.cookie('browser_uuid', randomID, {
-           maxAge: ((1000 * 3600) * 24) * 30, // 30days
-           httpOnly: true,
-           // domain: 'rsl-blog-server-1.herokuapp.com',
-           // domain: 'http://localhost:5500',
-    
-           sameSite: 'none',
-           // Forces to use https in production
-           secure: true
-         });
-  
-         day_visitor_count = await setDayVisitor(client, randomID.toString())
-  
-         response(res, 201, {
-           message: "cookie send",
-           day_visitor: day_visitor_count,
-           total_visitor: app_visitor_count + 1,
-         })
-       }
-     }
+     // client = await redisConnect()
+     //
+     // let app_visitor_count = await client.sCard("app_visitor")
+     // let day_visitor_count = 0
+     //
+     // if (getAppCookies(req).browser_uuid) {
+     //   // response(res, 200, {message: "cookie already exists"})
+     //
+     //   day_visitor_count = await setDayVisitor(client, getAppCookies(req).browser_uuid)
+     //
+     //   response(res, 201, {
+     //     message: "cookie send",
+     //     day_visitor: day_visitor_count,
+     //     total_visitor: app_visitor_count,
+     //   })
+     //
+     // } else {
+     //
+     //   // increase total visitor....
+     //   let isSet = await client.sAdd("app_visitor", randomID.toString())
+     //   if (isSet){
+     //     res.cookie('browser_uuid', randomID, {
+     //       maxAge: ((1000 * 3600) * 24) * 30, // 30days
+     //       httpOnly: true,
+     //       // domain: 'rsl-blog-server-1.herokuapp.com',
+     //       // domain: 'http://localhost:5500',
+     //
+     //       sameSite: 'none',
+     //       // Forces to use https in production
+     //       secure: true
+     //     });
+     //
+     //     day_visitor_count = await setDayVisitor(client, randomID.toString())
+     //
+     //     response(res, 201, {
+     //       message: "cookie send",
+     //       day_visitor: day_visitor_count,
+     //       total_visitor: app_visitor_count + 1,
+     //     })
+     //   }
+     // }
    } catch (ex){
      saveLog(ex.message ? ex.message : "Server Error")
      return response(res, 500, "Server error. try again")
@@ -294,7 +279,7 @@ export const cookieAdd = async (req: Request, res: Response)=> {
    
  }
  
-export const updateProfile = async (req, res)=>{
+export const updateProfile = async (req: RequestWithAuth, res: Response)=>{
   
    try {
      
@@ -361,7 +346,7 @@ export const updateProfile = async (req, res)=>{
    }
  }
  
-export const uploadProfilePhoto = (req, res, next)=>{
+export const uploadProfilePhoto = (req: RequestWithAuth, res: Response)=>{
   
    const form = formidable({multiples: false})
    form.parse(req, async (err, fields, files)=> {
@@ -374,11 +359,12 @@ export const uploadProfilePhoto = (req, res, next)=>{
      let {newPath, name} = await replaceOriginalFilename(files, "avatar")
      let client;
      try{
-       client = await redisConnect()
+       // client = await redisConnect()
+       
        let cloudImage = await uploadImage(newPath)
        if (cloudImage.secure_url) {
-         let user: any = await  User.findOne({_id: new ObjectId(req.user_id)}, {})
-         let isUpdated = await User.update({_id: user._id}, {$set: {avatar: cloudImage.secure_url}})
+         let user: any = await  User.findOne({_id: new ObjectId(req.user_id)})
+         let isUpdated = await User.updateOne({_id: user._id}, {$set: {avatar: cloudImage.secure_url}})
          if(isUpdated){
            fs.rm(newPath, () => {})
            response(res, 201,{message: "profile photo has been changed", avatar: cloudImage.secure_url})
@@ -395,13 +381,13 @@ export const uploadProfilePhoto = (req, res, next)=>{
        response(res, 500, "avatar photo upload fail")
     
      } finally {
-       await client?.quit()
+       // await client?.quit()
      }
    })
    
 }
 
-export const uploadProfileCoverPhoto = (req, res, next)=>{
+export const uploadProfileCoverPhoto = (req: RequestWithAuth, res: Response)=>{
    const form = formidable({multiples: true})
    
    form.parse(req, async (err, fields, files)=> {
@@ -418,7 +404,7 @@ export const uploadProfileCoverPhoto = (req, res, next)=>{
        fs.rename(files.cover.filepath, newPath, async (err) => {
          if (!err) {
            try {
-             let user: any = await  User.findOne({_id: new ObjectId(req.user_id)}, {})
+             let user: any = await  User.findOne({_id: new ObjectId(req.user_id)})
              if(user) {
                let cloudImage = await uploadImage(newPath)
                if (cloudImage.secure_url) {
@@ -450,7 +436,7 @@ export const uploadProfileCoverPhoto = (req, res, next)=>{
    })
 }
 
-export const uploadMarkdownImage = (req, res, next)=>{
+export const uploadMarkdownImage = (req: Request, res: Response)=>{
    const form = formidable({multiples: false})
    
    form.parse(req, async (err, fields, files)=> {
@@ -485,29 +471,28 @@ export const uploadMarkdownImage = (req, res, next)=>{
    })
 }
 
-export const getAuthPassword = async (req, res)=>{
+export const getAuthPassword = async (req: Request, res: Response)=>{
   
   if(req.body.user_id !== req.query.user_id){
     return  response(res, 409, { message: "You are unauthorized" })
   }
-  let client;
   try{
-    client = await redisConnect()
-    let userStr = client.HGET("users", req.body.user_id)
-    let user = JSON.parse(userStr)
-    
-    // response(res, 201, other)
-    response(res, 200, user.password)
+    // client = await redisConnect()
+    // let userStr = client.HGET("users", req.body.user_id)
+    // let user = JSON.parse(userStr)
+    //
+    // // response(res, 201, other)
+    // response(res, 200, user.password)
     
   } catch (ex){
     errorConsole(ex)
     return response(res, 500, ex.message)
   } finally {
-    client?.quit()
+  
   }
 }
 
-export const sendPasswordResetMail = async (req, res)=>{
+export const sendPasswordResetMail = async (req: Request, res: Response)=>{
   let client;
   const expiredTime = '30min'
   try{
@@ -525,75 +510,73 @@ export const sendPasswordResetMail = async (req, res)=>{
       subject: "Change Password",
       html: `
         <!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8"/>
-  <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  
-          <style type="text/css">
-              .bg{
-                font-family: Roboto,serif;
-                box-sizing: border-box;
-                width: 100%;
-                height: max-content;
-                background-image: linear-gradient(0deg, rgba(255, 70, 117, 0.92), rgba(255, 58, 241, 0.69));
-              }
-              .panel{
-                background: rgba(255, 255, 255, 0.73);
-              }
-              
-            </style>
-      </head>
-      <body>
+        <html>
+        <head>
+          <meta charset="utf-8"/>
+          <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <style type="text/css">
+                  .bg{
+                    font-family: Roboto,serif;
+                    box-sizing: border-box;
+                    width: 100%;
+                    height: max-content;
+                    background-image: linear-gradient(0deg, rgba(255, 70, 117, 0.92), rgba(255, 58, 241, 0.69));
+                  }
+                  .panel{
+                    background: rgba(255, 255, 255, 0.73);
+                  }
+                  
+                </style>
+              </head>
+              <body>
           
-            <div class="bg" style="padding: 50px">
-              <h1 style="text-align: center; color: white; margin: 0px 0; margin-bottom: 10px; font-weight: 600">Change Password DEV-STORY application</h1>
-              <div style="background: rgba(230,230,230,0.439); padding: 60px; max-width: 60%; margin: auto; border-radius: 4px ">
-                <h2 style="text-align: start; color: white; margin: 20px 0; font-weight: 500">Hey ${user.first_name}</h2>
-                <p style="text-align: start; color: white; margin: 0px 0; font-weight: 400">Someone (hopefully you) ! has requested to change your old password.
-                  Please click the link below to change your password now</p>
-                  <button style="width: max-content; padding:5px 10px; color: white; outline: none; border:none; background: rgba(255,255,255,0.36); border-radius: 4px; margin-top: 40px ">
-                  <a href="${process.env.NODE_ENV === "development" ? "http://localhost:5500" : "https://rsl-my-blog.netlify.app" }/#/auth/join/new-password/${token}">CHANGE MY PASSWORD </a>
-                  </button>
-              
-                <p style="text-align: start; color: white; margin: 20px 0; font-weight: 500">Please note that your password will not change unless you click the link above and
-                  create a new one.</p>
-                <p style="text-align: start; color: white; margin: 20px 0; font-weight: 500">This link will expire in 30 minutes. If your link has expired, you can always</p>
-              
-                <div>
-                  <p>Sincerely,</p>
-                  <h4>Rasel Mahmud</h4>
-                </div>
+              <div class="bg" style="padding: 50px">
+                <h1 style="text-align: center; color: white; margin: 0px 0; margin-bottom: 10px; font-weight: 600">Change Password DEV-STORY application</h1>
+                <div style="background: rgba(230,230,230,0.439); padding: 60px; max-width: 60%; margin: auto; border-radius: 4px ">
+                  <h2 style="text-align: start; color: white; margin: 20px 0; font-weight: 500">Hey ${user.first_name}</h2>
+                  <p style="text-align: start; color: white; margin: 0px 0; font-weight: 400">Someone (hopefully you) ! has requested to change your old password.
+                    Please click the link below to change your password now</p>
+                    <button style="width: max-content; padding:5px 10px; color: white; outline: none; border:none; background: rgba(255,255,255,0.36); border-radius: 4px; margin-top: 40px ">
+                    <a href="${process.env.NODE_ENV === "development" ? "http://localhost:5500" : "https://rsl-my-blog.netlify.app" }/#/auth/join/new-password/${token}">CHANGE MY PASSWORD </a>
+                    </button>
                 
+                  <p style="text-align: start; color: white; margin: 20px 0; font-weight: 500">Please note that your password will not change unless you click the link above and
+                    create a new one.</p>
+                  <p style="text-align: start; color: white; margin: 20px 0; font-weight: 500">This link will expire in 30 minutes. If your link has expired, you can always</p>
+                
+                  <div>
+                    <p>Sincerely,</p>
+                    <h4>Rasel Mahmud</h4>
+                  </div>
+                  
+                </div>
               </div>
-            </div>
-          </body>
-</html>
+            </body>
+        </html>
       `
     })
 
-    if(info.messageId){
-      response(res, 201, {message: "Email has been send"})
-    } else {
-      response(res, 500, "internal error")
-    }
+    // if(info.messageId){
+    //   response(res, 201, {message: "Email has been send"})
+    // } else {
+    //   response(res, 500, "internal error")
+    // }
     
   } catch (ex){
     errorConsole(ex)
     if(ex.message === "jwt expired"){
       response(res, 409, "session timeout")
     } else {
-      console.log(ex)
-      response(res, 500, "Network error")
+      
+      response(res, 500, ex.message)
     }
   } finally {
   
   }
 }
 
-export const checkPasswordResetSessionTimeout = async (req, res)=> {
+export const checkPasswordResetSessionTimeout = async (req: Request, res: Response)=> {
   let { token } = req.body
   
   try {
@@ -608,7 +591,7 @@ export const checkPasswordResetSessionTimeout = async (req, res)=> {
   }
 }
 
-export const changePassword = async (req, res)=>{
+export const changePassword = async (req: Request, res: Response)=>{
   let client;
   try{
     const { token, password }  = req.body
@@ -617,8 +600,8 @@ export const changePassword = async (req, res)=>{
     // 1st check token validity.
     // 2. if token valid then reset password
     
-    let { email, id } =  await parseToken(token)
-    let user: any = await User.findOne({email: email}, {})
+    let { userId, role } =  await parseToken(token)
+    let user: any = await User.findOne({_id: userId})
     
     if(user){
       let {hash, err} = await createHash(password)
@@ -626,8 +609,8 @@ export const changePassword = async (req, res)=>{
         errorConsole(err)
         response(res, 500, "Password reset fail. Try again")
       }
-      let isUpdated = await User.update(
-        {email: email},
+      let isUpdated = await User.updateOne(
+        {_id: userId},
         {$set: {password: hash}}
       )
       if(isUpdated) {

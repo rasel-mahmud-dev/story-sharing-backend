@@ -1,17 +1,11 @@
 node_modules
 .idea
 dist
-
-# "engines": {
-#     "node": "16.12.0"
-#   },
-
 markdown
 src/drive
 src/dropbox
+# Local Netlify folder
+.netlify
+.env
+src/logs
 
-
-
-
-
-ma

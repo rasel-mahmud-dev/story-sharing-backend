@@ -1,21 +1,22 @@
+import "../models"
 
 import postRoutes from "./postRoutes"
 import authRoutes from "./authRoutes";
-// import filesRoutes from "./filesRoutes";
-import appAdminRoutes from "./appAdminRoutes";
+// import appAdminRoutes from "./appAdminRoutes";
+import express from "express";
+
+const router = express.Router()
 
 
-function routes (app){
-  
-  app.get("/", (req, res)=>{
+router.get("/", (req, res) => {
     res.send("Hello")
-  })
-  postRoutes(app)
-  authRoutes(app)
-  // filesRoutes(app)
-  appAdminRoutes(app)
-}
+})
+
+router.use("/api", postRoutes)
+router.use("/api", authRoutes)
+// router.use("/api", appAdminRoutes)
 
 
-export default routes
+export default router
+module.exports = router
 

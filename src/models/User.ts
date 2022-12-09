@@ -5,8 +5,7 @@ import {ObjectKeys} from "../types";
 
 export interface UserType {
     _id?: string
-    facebookId?: string;
-    googleId?: string;
+    oauthId?: string;
     first_name: string;
     last_name: string;
     username: string;
@@ -23,6 +22,9 @@ const schema: ObjectKeys<UserType> = {
     first_name: {
         type: String,
         required: [true, 'first_name required']
+    },
+    oauthId: {
+        type: String
     },
     last_name: {
         type: String,

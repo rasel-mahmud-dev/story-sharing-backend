@@ -3,6 +3,7 @@ import passport from "passport"
 import controllers from "../controllers"
 import getAuthID from "../middlewares/getAuthID";
 import response from "../response";
+import {loginWithGoogle} from "../controllers/authController";
 
 
 const router = express.Router()
@@ -21,27 +22,7 @@ router.post("/auth/register", controllers.authController.createNewUser)
 // router.post("/add-cookie", controllers.authController.cookieAdd)
 
 
-// router.get('/auth/callback/google', passport.authenticate('google'), function(req, res) {
-//   if(req.user){
-//     let queryParams = ''
-//     for (let userKey in req.user) {
-//       if(req.user[userKey]) {
-//         queryParams = queryParams + "&" + userKey + "=" + req.user[userKey]
-//       }
-//     }
-//     let q = queryParams.slice(1)
-//
-//     // res.redirect(`${process.env.NODE_ENV === "development" ? "http://localhost:5500/#" : "https://rsl-my-blog.netlify.app/#"}/auth/callback/google?${q}`)
-//     res.redirect(`https://rsl-my-blog.netlify.app/#/auth/callback/google?${q}`)
-//     req.user = {
-//       id: req.user._id,
-//       email: req.user.email
-//     }
-//   } else {
-//     response(res, 500, "Internal Error")
-//   }
-//   // Successful authentication, redirect home.
-// });
+router.get('/auth/callback/google', passport.authenticate('google'), loginWithGoogle);
 
 // router.get('/auth/callback/facebook',  passport.authenticate('facebook'),  function(req, res) {
 //   if(req.user){
@@ -132,7 +113,7 @@ router.get('/auth/callback/facebook', function (req, res) {
     })(req, res);
 });
 
-router.get('/auth/social/login/google', passport.authenticate('google', {scope: ['profile', 'email']}));
+router.get('/auth/social/login/google', passport.authenticate('google', {session:  false, scope: ['profile', 'email']}));
 router.get('/auth/social/login/facebook', passport.authenticate('facebook'));
 
 

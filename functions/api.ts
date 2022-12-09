@@ -1,6 +1,5 @@
 import express, {Request, Response} from "express";
 import mongoose from "mongoose";
-import routes from "../src/routers";
 
 const serverless = require('serverless-http');
 const app = express();
@@ -37,6 +36,7 @@ app.use(cors(corsOptions))
 const router = express.Router();
 
 
+
 try {
     if (process.env.NODE_ENV === "development") {
         const routes = require("../src/routers")
@@ -48,12 +48,6 @@ try {
 } catch (ex) {
 
 }
-
-//
-// // [GET] /.netlify/functions/api
-// router.get("/", function (req: Request, res: Response) {
-//     res.send("success /.netlify/functions/api" )
-// })
 
 
 // [GET] /

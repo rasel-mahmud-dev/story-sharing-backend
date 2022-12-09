@@ -14,10 +14,56 @@ import sendMail from "../utilities/sendMail";
 import {ObjectId} from "mongodb";
 import saveLog from "../logger/saveLog";
 import mongoose from "mongoose";
-import {RequestWithAuth} from "../types";
+import {UserType} from "../models/User";
 
 
 const User = mongoose.model("User")
+
+
+export const loginWithGoogle = async (req, res, next) => {
+    try {
+
+        // Successful authentication, redirect home.
+        if (!req.user) {
+            return
+        }
+
+        const {username, oauthId, email, avatar} = req.user
+
+        let user = await User.findOne<UserType>({email: email});
+
+        if (!user) {
+            let newUser: any = new User({
+                avatar: avatar,
+                first_name: username,
+                last_name: "",
+                username: username,
+                oauthId: oauthId,
+                email,
+                password: ""
+            })
+
+            newUser = await newUser.save()
+            if (newUser) {
+                let token = await createToken(newUser._id, newUser.email)
+                res.redirect(process.env.FRONTEND + "/auth/auth-callback?token=" + token);
+            } else {
+                res.redirect(process.env.FRONTEND + "/auth/auth-callback?token=");
+            }
+
+        } else {
+            if (user._id) {
+                let token = await createToken(user._id, user.role)
+                res.redirect(process.env.FRONTEND + "/auth/auth-callback?token=" + token);
+            } else{
+                res.redirect(process.env.FRONTEND + "/auth/auth-callback?token=");
+            }
+        }
+
+    } catch (ex) {
+
+    }
+}
 
 export const createNewUser = async (req: Request, res: Response) => {
     let client;

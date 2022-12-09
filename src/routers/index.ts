@@ -5,6 +5,9 @@ import authRoutes from "./authRoutes";
 // import appAdminRoutes from "./appAdminRoutes";
 import express from "express";
 
+import "../passport/oauth"
+
+
 const router = express.Router()
 
 

@@ -6,7 +6,7 @@ import response from "../response";
 import {loginWithGoogle} from "../controllers/authController";
 
 
-const router = express.Router()
+const router: any = express.Router()
 
 
 router.get("/auth/user/:email", controllers.authController.getUserEmail)

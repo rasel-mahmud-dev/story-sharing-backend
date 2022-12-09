@@ -1,24 +1,26 @@
-import { parseToken} from "../jwt";
-import {NextFunction,  Response} from "express";
-import {RequestWithAuth} from "../types";
+import {parseToken} from "../jwt";
+import {NextFunction, Response} from "express";
 
- function getAuthID(req: RequestWithAuth, res: Response, next: NextFunction){
-  let token = req.headers["token"]
-  
-  if(!token){
-    res.status(409).json({message: "You are unauthorized"})
-    return
-  }
-  
-  parseToken(token).then(u=>{
-    req.user_id = u.userId
-    req.user_role = u.role
-    next()
-  }).catch(err=>{
-    console.log(err.message)
-    res.status(409).json({message: "You are unauthorized"})
-    return
-  })
+function getAuthID(req: Request, res: Response, next: NextFunction) {
+    let token = req.headers["token"]
+
+    if (!token) {
+        res.status(409).json({message: "You are unauthorized"})
+        return
+    }
+
+
+    parseToken(token).then(u => {
+        // @ts-ignore
+        req.user = {
+            userId: u.userId,
+            role: u.role
+        }
+        next()
+    }).catch(err => {
+        console.log(err.message)
+        res.status(409).json({message: "You are unauthorized"})
+    })
 }
 
 

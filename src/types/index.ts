@@ -1,14 +1,23 @@
 // to make the file a module and avoid the TypeScript error
 
-export {}
+import "express";
 
 declare global {
+        interface Request {
+            body: any
+            user: any
+        }
 
+}
+
+
+declare module 'express-serve-static-core' {
     export interface Request {
-        n: string,
-        user: {
-            userId: string,
-            role: string
-        };
+        user: any
+
     }
 }
+
+export type ObjectKeys<Type> = {
+    [Property in keyof Type]: any;
+};

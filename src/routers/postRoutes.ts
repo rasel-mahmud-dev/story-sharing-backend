@@ -3,7 +3,7 @@ import controller from "../controllers"
 
 import express from "express";
 
-const router = express.Router()
+const router: any = express.Router()
 
 
 router.get("/test", controller.postController.getP);

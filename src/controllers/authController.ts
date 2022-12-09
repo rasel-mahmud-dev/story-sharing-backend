@@ -2,7 +2,7 @@ import response from "../response";
 import {createToken, parseToken} from "../jwt";
 import errorConsole from "../logger/errorConsole";
 
-import express, {Request, Response} from 'express';
+import express, {NextFunction, Request, Response} from 'express';
 import fs from "fs";
 import formidable from 'formidable';
 import {uploadImage} from "../cloudinary";
@@ -20,7 +20,7 @@ import {UserType} from "../models/User";
 const User = mongoose.model("User")
 
 
-export const loginWithGoogle = async (req, res, next) => {
+export const loginWithGoogle = async (req: Request, res: Response, next: NextFunction) => {
     try {
 
         // Successful authentication, redirect home.
@@ -325,11 +325,11 @@ export const cookieAdd = async (req: Request, res: Response) => {
 
 }
 
-export const updateProfile = async (req: RequestWithAuth, res: Response) => {
+export const updateProfile = async (req: Request, res: Response) => {
 
     try {
 
-        let user: any = User.findOne({_id: new ObjectId(req.user_id)}, {})
+        let user: any = User.findOne({_id: new ObjectId(req.user.userId)}, {})
 
         if (user) {
             const {username, first_name, about_you, last_name, email, oldPassword, newPassword} = req.body
@@ -363,7 +363,7 @@ export const updateProfile = async (req: RequestWithAuth, res: Response) => {
                 user.email = email
             }
 
-            let doc = await User.update({_id: new ObjectId(req.user_id)},
+            let doc = await User.update({_id: new ObjectId(req.user.userId)},
                 {
                     $set: user
                 }
@@ -392,7 +392,7 @@ export const updateProfile = async (req: RequestWithAuth, res: Response) => {
     }
 }
 
-export const uploadProfilePhoto = (req: RequestWithAuth, res: Response) => {
+export const uploadProfilePhoto = (req: Request, res: Response) => {
 
     const form = formidable({multiples: false})
     form.parse(req, async (err, fields, files) => {
@@ -409,7 +409,7 @@ export const uploadProfilePhoto = (req: RequestWithAuth, res: Response) => {
 
             let cloudImage = await uploadImage(newPath)
             if (cloudImage.secure_url) {
-                let user: any = await User.findOne({_id: new ObjectId(req.user_id)})
+                let user: any = await User.findOne({_id: new ObjectId(req.user.userId)})
                 let isUpdated = await User.updateOne({_id: user._id}, {$set: {avatar: cloudImage.secure_url}})
                 if (isUpdated) {
                     fs.rm(newPath, () => {
@@ -435,7 +435,7 @@ export const uploadProfilePhoto = (req: RequestWithAuth, res: Response) => {
 
 }
 
-export const uploadProfileCoverPhoto = (req: RequestWithAuth, res: Response) => {
+export const uploadProfileCoverPhoto = (req: Request, res: Response) => {
     const form = formidable({multiples: true})
 
     form.parse(req, async (err, fields, files) => {
@@ -452,7 +452,7 @@ export const uploadProfileCoverPhoto = (req: RequestWithAuth, res: Response) => 
             fs.rename(files.cover.filepath, newPath, async (err) => {
                 if (!err) {
                     try {
-                        let user: any = await User.findOne({_id: new ObjectId(req.user_id)})
+                        let user: any = await User.findOne({_id: new ObjectId(req.user.userId)})
                         if (user) {
                             let cloudImage = await uploadImage(newPath)
                             if (cloudImage.secure_url) {

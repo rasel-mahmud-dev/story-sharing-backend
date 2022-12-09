@@ -1,12 +1,16 @@
-import "../models"
+require("../models")
+require("../passport/oauth")
 
 import postRoutes from "./postRoutes"
 import authRoutes from "./authRoutes";
 // import appAdminRoutes from "./appAdminRoutes";
 import express from "express";
 
-import "../passport/oauth"
 
+
+
+// require("../passport/oauth")
+// require("../passport/facebook")
 
 const router = express.Router()
 

@@ -1,4 +1,4 @@
-const passport = require("passport")
+import passport from "passport"
 const GoogleStrategy  = require('passport-google-oauth20').Strategy;
 
 const GOOGLE_REDIRECT_URL = process.env.BACKEND_URI + "/api/auth/callback/google"
@@ -23,3 +23,5 @@ passport.use(new GoogleStrategy({
 passport.serializeUser(function (user, cb) {
 	cb(null, user);
 });
+
+module.exports = {}

@@ -1,4 +1,4 @@
-const passport = require("passport")
+import passport from "passport"
 const FacebookStrategy = require('passport-facebook').Strategy;
 
 
@@ -24,3 +24,5 @@ passport.use(new FacebookStrategy({
 passport.serializeUser(function (user, cb) {
 	cb(null, user);
 });
+
+module.exports = {}

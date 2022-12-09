@@ -39,8 +39,8 @@ const router = express.Router();
 
 try {
     if (process.env.NODE_ENV === "development") {
-        const routes = require("../src/routers")
-        router.use(routes)
+        // const routes = require("../src/routers")
+        // router.use(routes)
     } else {
         const routes = require("../dist/routers")
         router.use(routes)

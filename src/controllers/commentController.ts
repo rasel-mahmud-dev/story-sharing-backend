@@ -45,11 +45,8 @@ export const findComments = async (req: Request, res: Response) => {
     }
 }
 
+
 export const createComment = async (req: Request, res: Response) => {
-
-
-
-
 
     if (req.user.userId !== req.body.user_id) {
         return response(res, 404, {message: "Unauthorized"})

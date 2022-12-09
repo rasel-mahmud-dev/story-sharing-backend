@@ -3,16 +3,14 @@ import errorConsole from "../logger/errorConsole";
 import slugify from "slugify";
 import {ObjectId} from "mongodb";
 import path from "path";
-import {writeFile, rm} from "fs/promises";
+import { rm} from "fs/promises";
 import fs from "fs";
 import { marked } from 'marked';
 
-
 import saveLog from "../logger/saveLog";
-import uploadMarkdownFile from "../utilities/uploadMarkdownFile";
 import * as mongoose from "mongoose";
 import {Request, Response} from "express";
-import {RequestWithAuth} from "../types";
+
 
 
 const User = mongoose.model("User")
@@ -224,10 +222,10 @@ export const getPost = async (req: Request, res: Response) =>{
 
 }
 
-export const addPost = async (req: RequestWithAuth, res: Response) =>{
+export const addPost = async (req: Request, res: Response) =>{
   
   let { title, cover = "",  mdContent, tags, summary = "" } = req.body
-  
+
   
   if(!mdContent){
     return response(res, 400, {message: "post not create because markdown content are empty"})
@@ -257,10 +255,12 @@ export const addPost = async (req: RequestWithAuth, res: Response) =>{
     //   saveLog("markdown file create fail " + mdFilePath)
     //   return  response(res, 409, { message: "markdown file create fail" })
     // }
-    
+
+
+
  
     let newPost: any = {
-      author_id: new ObjectId(req.user_id),
+      author_id: new ObjectId(req.user.userId),
       slug,
       title,
       cover,
@@ -279,9 +279,10 @@ export const addPost = async (req: RequestWithAuth, res: Response) =>{
       response(res, 409, "post create fail")
       return
     }
+
  
     // populated author...
-    let user: any = await User.findOne({_id: new ObjectId(req.user_id)}).select("-password -role")
+    let user: any = await User.findOne({_id: new ObjectId(req.user.userId)}).select("-password -role")
      r._doc.author = user
      response(res, 200, {post: r._doc})
 
@@ -297,9 +298,8 @@ export const addPost = async (req: RequestWithAuth, res: Response) =>{
 }
 
 
-export const updatePost = async (req: RequestWithAuth, res: Response) =>{
+export const updatePost = async (req: Request, res: Response) =>{
 
-  let user_id = req.user_id
 
   let { _id, title, cover, summary, mdContent, tags } = req.body
 
@@ -613,7 +613,7 @@ function deletePostHandler(req: Request, res: Response){
 }
 
 
-export const deletePost = async (req: RequestWithAuth, res: Response) =>{
+export const deletePost = async (req: Request, res: Response) =>{
   let { adminId } = req.body
   try{
     if(adminId){

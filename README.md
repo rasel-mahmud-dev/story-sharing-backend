@@ -41,11 +41,11 @@ Live Link https://story-sharing.netlify.app
 
 
 ## Functional requirement.
-- multiple role base online shop. user can buy products.
-- seller can sales their product, also they can add/update, delete, see his buyers.
-- another role is admin he can delete a seller and buyer, he can see all transactions.
-- only logged user can buy products.
-- buyer/customer can create account with google and email and password and they can payment using credit card
+- multiple writer based blog site. writer share their post.
+- user can log in with Google, facebook and email & password system.
+- user can like, comment in other writer post.
+- only logged user can see their dashboard and add post route.
+- admin role has all permission. like block writer, see all writer etc. 
 
 ## Database.
 - Mongodb

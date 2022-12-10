@@ -39,7 +39,7 @@ const schema: ObjectKeys<UserType> = {
         //   validator: async function(v) {
         //   }
         // },
-        required: [true, 'User Email required']
+        // required: [true, 'User Email required']
     },
     role: {
         type: String,

@@ -2,7 +2,7 @@ import passport from "passport"
 const GoogleStrategy  = require('passport-google-oauth20').Strategy;
 
 const GOOGLE_REDIRECT_URL = process.env.BACKEND_URI + "/api/auth/callback/google"
-// it will redirect to = "/.netlify/functions/server/auth/callback/google"  [netlify.toml]
+// it will redirect to = "/.netlify/functions/server/api/api/auth/callback/google"  [netlify.toml]
 
 
 passport.use(new GoogleStrategy({

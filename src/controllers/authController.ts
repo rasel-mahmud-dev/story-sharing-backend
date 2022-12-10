@@ -28,9 +28,9 @@ export const loginWithGoogle = async (req: Request, res: Response, next: NextFun
             return
         }
 
-        const {username, oauthId, email, avatar} = req.user
+        const {username, oauthId, email, avatar="", id = ""} = req.user
 
-        let user = await User.findOne<UserType>({email: email});
+        let user = await User.findOne<UserType>({ $or: [{ email: email, oauthId: id}]});
 
         if (!user) {
             let newUser: any = new User({
@@ -61,7 +61,7 @@ export const loginWithGoogle = async (req: Request, res: Response, next: NextFun
         }
 
     } catch (ex) {
-
+        res.redirect(process.env.FRONTEND + "/auth/auth-callback?token=");
     }
 }
 

@@ -1,5 +1,6 @@
 require("../models")
 require("../passport/oauth")
+require("../passport/facebook")
 
 import postRoutes from "./postRoutes"
 import authRoutes from "./authRoutes";

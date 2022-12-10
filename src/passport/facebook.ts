@@ -3,7 +3,8 @@ const FacebookStrategy = require('passport-facebook').Strategy;
 
 
 
-let callbackURL = `${process.env.BACKEND_URL}/api/v1/auth/facebook/callback`
+let callbackURL = `/api/auth/callback/facebook`
+// let callbackURL = `http://localhost:8080/api/auth/callback/facebook`
 
 
 passport.use(new FacebookStrategy({
@@ -15,7 +16,7 @@ passport.use(new FacebookStrategy({
 		cb(null, {
 			id: profile.id,
 			username: profile.displayName,
-			email: profile.emails[0].value,
+			email: profile.emails && profile.emails[0]?.value,
 			photo: profile.photos ? profile.photos[0].value : "",
 		})
 	}

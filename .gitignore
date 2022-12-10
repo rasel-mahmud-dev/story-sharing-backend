@@ -8,4 +8,5 @@ src/dropbox
 .netlify
 .env
 src/logs
+.env-bak
 

@@ -3,8 +3,14 @@ const FacebookStrategy = require('passport-facebook').Strategy;
 
 
 
-let callbackURL = `/api/auth/callback/facebook`
-// let callbackURL = `http://localhost:8080/api/auth/callback/facebook`
+let callbackURL = process.env.NODE_ENV !== "development"
+	? `${process.env.BACKEND_URI}/api/auth/callback/facebook`
+	: `/api/auth/callback/facebook`
+// localhost
+// let callbackURL = `/api/auth/callback/facebook`
+
+// prod
+// https://story-sharing-api.netlify.app/.netlify/functions/server/api/api/auth/callback/facebook
 
 
 passport.use(new FacebookStrategy({

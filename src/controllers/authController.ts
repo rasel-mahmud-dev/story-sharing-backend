@@ -28,9 +28,9 @@ export const loginWithGoogle = async (req: Request, res: Response, next: NextFun
             return
         }
 
-        const {username, oauthId, email, avatar="", id = ""} = req.user
+        const {username, oauthId, email, avatar = "", id = ""} = req.user
 
-        let user = await User.findOne<UserType>({ $or: [{ email: email, oauthId: id}]});
+        let user = await User.findOne<UserType>({$or: [{email: email, oauthId: id}]});
 
         if (!user) {
             let newUser: any = new User({
@@ -55,7 +55,7 @@ export const loginWithGoogle = async (req: Request, res: Response, next: NextFun
             if (user._id) {
                 let token = await createToken(user._id, user.role)
                 res.redirect(process.env.FRONTEND + "/auth/auth-callback?token=" + token);
-            } else{
+            } else {
                 res.redirect(process.env.FRONTEND + "/auth/auth-callback?token=");
             }
         }
@@ -594,7 +594,7 @@ export const sendPasswordResetMail = async (req: Request, res: Response) => {
                   <p style="text-align: start; color: white; margin: 0px 0; font-weight: 400">Someone (hopefully you) ! has requested to change your old password.
                     Please click the link below to change your password now</p>
                     <button style="width: max-content; padding:5px 10px; color: white; outline: none; border:none; background: rgba(255,255,255,0.36); border-radius: 4px; margin-top: 40px ">
-                    <a href="${process.env.NODE_ENV === "development" ? "http://localhost:5500" : "https://rsl-my-blog.netlify.app"}/#/auth/join/new-password/${token}">CHANGE MY PASSWORD </a>
+                    <a href="${process.env.FRONTEND}/auth/join/new-password?token=${token}">CHANGE MY PASSWORD </a>
                     </button>
                 
                   <p style="text-align: start; color: white; margin: 20px 0; font-weight: 500">Please note that your password will not change unless you click the link above and
@@ -613,11 +613,11 @@ export const sendPasswordResetMail = async (req: Request, res: Response) => {
       `
         })
 
-        // if(info.messageId){
-        //   response(res, 201, {message: "Email has been send"})
-        // } else {
-        //   response(res, 500, "internal error")
-        // }
+        if (info.messageId) {
+            response(res, 201, {message: "Password reset email has been send"})
+        } else {
+            response(res, 500, "password reset email send fail")
+        }
 
     } catch (ex) {
         errorConsole(ex)

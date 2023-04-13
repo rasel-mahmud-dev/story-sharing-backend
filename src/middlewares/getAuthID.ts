@@ -1,5 +1,6 @@
 import {parseToken} from "../jwt";
 import {NextFunction, Response} from "express";
+import Role from "../interfaces/Role";
 
 function getAuthID(req: Request, res: Response, next: NextFunction) {
     let token = req.headers["token"]
@@ -14,7 +15,7 @@ function getAuthID(req: Request, res: Response, next: NextFunction) {
         // @ts-ignore
         req.user = {
             userId: u.userId,
-            role: u.role
+            roles: u.roles as Role[]
         }
         next()
     }).catch(err => {

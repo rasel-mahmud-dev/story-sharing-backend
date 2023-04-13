@@ -1,84 +1,63 @@
-import mongoose, {Schema} from 'mongoose';
-
-import bcrypt from 'bcryptjs';
-import {ObjectKeys} from "../types";
-
-export interface UserType {
-    _id?: string
-    oauthId?: string;
-    first_name: string;
-    last_name: string;
-    username: string;
-    email: string;
-    password: string;
-    createdAt?: string;
-    updatedAt?: string;
-    avatar: string;
-    cover?: string;
-    role?: string
-}
-
-const schema: ObjectKeys<UserType> = {
-    first_name: {
-        type: String,
-        required: [true, 'first_name required']
-    },
-    oauthId: {
-        type: String
-    },
-    last_name: {
-        type: String,
-    },
-    username: {
-        type: String,
-    },
-    email: {
-        type: String,
-        index: true,
-        // validate: {
-        //   validator: async function(v) {
-        //   }
-        // },
-        // required: [true, 'User Email required']
-    },
-    role: {
-        type: String,
-        enum: ['admin', 'user'],
-        message: '{VALUE} is not supported'
-    },
-    password: {type: String},
-    avatar: String,
-    cover: String
-}
+import {ObjectId} from "mongodb";
+import {IndexType} from "../services/mongodb/models.index.types";
+import Base from "./Base";
+import Role from "../interfaces/Role";
+import UserType from "../interfaces/UserType";
 
 
-const userSchema = new Schema(schema, {timestamps: true});
+class User extends Base implements UserType{
+    public _id?: ObjectId | string
+    public googleId?: string
+    public facebookId?: string
+    public username: string
+    public firstName: string
+    public lastName?:  string
+    public email: string
+    public password?: string
+    public createdAt: Date
+    public updatedAt: Date
+    public avatar: string
+    public roles: Role[]
+    public accountStatus?: boolean
 
-
-const filter = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/
-
-userSchema.path('email').validate(async function (value) {
-
-    if (filter.test(value)) {
-        let User = mongoose.model("User")
-        let u = await User.findOne({email: value})
-
-        if (u) {
-            throw new Error("This user already exist")
-        } else {
-            return true
+    static indexes: IndexType = {
+        email: {
+            unique: true,
+        },
+        username: {
+            // unique: true,
         }
-
-    } else {
-        throw new Error("Bad email format")
     }
-});
 
-userSchema.pre('save', function (next) {
-    const salt = bcrypt.genSaltSync(10);
-    this.password = bcrypt.hashSync(this.password, salt)
-    next()
-});
+    static collectionName = "users"
 
-mongoose.model("User", userSchema)
+    constructor(data: UserType) {
+        super(User.collectionName);
+        this.username = data.username
+        this.firstName = data.firstName
+        this.facebookId = data.facebookId
+        this.googleId = data.googleId
+        this.lastName = data.lastName
+        this.email = data.email
+        this.password = data.password
+        this.avatar = ""
+        this.createdAt = new Date()
+        this.updatedAt = new Date()
+        this.roles = data.roles;
+        this.accountStatus =  false
+    }
+}
+
+
+
+module.exports = User
+export default User
+
+
+
+
+
+
+
+
 

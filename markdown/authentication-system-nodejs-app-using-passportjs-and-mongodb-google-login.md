@@ -114,7 +114,7 @@ Create a new file named `app.js`
 ```js
 import express from 'express';
 import bodyParser from 'body-parser';
-import routes from "../src/routers";
+import routes from "../src/routes";
 import {mongoConnect} from "./database";
 
 require('dotenv').config()
@@ -133,12 +133,12 @@ require("./passport/google")
 routes(app)
 
 
-mongoConnect().then(async res=>{
-  console.log("mongodb connected")
-  await res.client.close()
-}).catch(err=>{
-  console.log("mongodb connection fail.")
-  
+mongoConnect().then(async res => {
+    console.log("mongodb connected")
+    await res.client.close()
+}).catch(err => {
+    console.log("mongodb connection fail.")
+
 })
 
 const PORT = process.env.PORT || 3000

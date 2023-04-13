@@ -2,7 +2,7 @@ import response from "../response";
 import {createToken, parseToken} from "../jwt";
 import errorConsole from "../logger/errorConsole";
 
-import express, {NextFunction, Request, Response} from 'express';
+import {NextFunction, Request, Response} from 'express';
 import fs from "fs";
 import formidable from 'formidable';
 import {uploadImage} from "../cloudinary";
@@ -13,11 +13,11 @@ import sendMail from "../utilities/sendMail";
 
 import {ObjectId} from "mongodb";
 import saveLog from "../logger/saveLog";
-import mongoose from "mongoose";
-import {UserType} from "../models/User";
 
 
-const User = mongoose.model("User")
+import User from "../models/User"
+import UserType from "../interfaces/UserType";
+import Role from "../interfaces/Role";
 
 
 export const loginWithGoogle = async (req: Request, res: Response, next: NextFunction) => {
@@ -41,7 +41,7 @@ export const loginWithGoogle = async (req: Request, res: Response, next: NextFun
                 oauthId: oauthId,
                 email,
                 password: ""
-            })
+            } as unknown as User)
 
             newUser = await newUser.save()
             if (newUser) {
@@ -53,7 +53,7 @@ export const loginWithGoogle = async (req: Request, res: Response, next: NextFun
 
         } else {
             if (user._id) {
-                let token = await createToken(user._id, user.role)
+                let token = await createToken(user._id as string, user.roles as Role[])
                 res.redirect(process.env.FRONTEND + "/auth/auth-callback?token=" + token);
             } else {
                 res.redirect(process.env.FRONTEND + "/auth/auth-callback?token=");
@@ -69,7 +69,7 @@ export const createNewUser = async (req: Request, res: Response) => {
     let client;
 
     try {
-        let {first_name, last_name, email, password} = req.body
+        let {firstName, lastName, email, password} = req.body
         const {err, hash} = await createHash(password)
 
         let user: any = await User.findOne({email: email}, {})
@@ -78,10 +78,11 @@ export const createNewUser = async (req: Request, res: Response) => {
             return
         } else {
             let newUser: any = new User({
+                roles: [Role.USER],
                 avatar: "",
-                first_name,
-                last_name,
-                username: first_name + last_name ? last_name : "",
+                firstName,
+                lastName,
+                username: firstName + lastName ? lastName : "",
                 email,
                 password: hash
             })
@@ -111,7 +112,7 @@ export const createNewUser = async (req: Request, res: Response) => {
 }
 
 export const loginUser = async (req: Request, res: Response) => {
-    let client;
+
     try {
         let {email, password} = req.body
         if (!(email && password)) {
@@ -124,7 +125,7 @@ export const loginUser = async (req: Request, res: Response) => {
         errorConsole(ex)
         response(res, 500, ex.message ? ex.message : "Internal Error")
     } finally {
-        client?.close()
+
     }
 }
 
@@ -135,12 +136,14 @@ function loginUserHandler(email: string, password: string) {
             let user: any = await User.findOne({email: email})
 
             if (user) {
-                let match = await hashCompare(password, user.password)
-                if (!match) return e(new Error("Password not match"))
 
-                let token = await createToken(user._id, user.email, user.role ? user.role : "user")
-                delete user._doc.password
-                s({user: user._doc, token})
+                let match = await hashCompare(password, user.password)
+
+                // if (!match) return e(new Error("Password not match"))
+
+                let token = await createToken(user._id, user.roles ? user.roles : [Role.USER])
+                delete user.password
+                s({user: user, token})
             } else {
                 e(new Error("login fail"))
             }
@@ -161,7 +164,7 @@ export const loginViaToken = async (req: Request, res: Response) => {
 
         if (!token) return response(res, 404, "token not found")
         let {userId, role} = await parseToken(token)
-        let user: any = await User.findOne({_id: new ObjectId(userId)}).select("-password")
+        let user: any = await User.findOne({_id: new ObjectId(userId)}, {projection: {password: 0}})
 
         if (user) {
             response(res, 201, user)
@@ -177,9 +180,9 @@ export const loginViaToken = async (req: Request, res: Response) => {
 }
 
 export const getUser = async (req: Request, res: Response) => {
-    const {id} = req.params
+    const {username} = req.params
     try {
-        let user = await User.findOne({_id: new ObjectId(id)}).select("-password")
+        let user = await User.findOne({username: username}, {projection: {password: 0}})
         response(res, 200, {user})
 
     } catch (ex) {
@@ -193,7 +196,7 @@ export const getUsers = async (req: Request, res: Response) => {
     try {
         let isAdmin = await User.findOne({_id: new ObjectId(adminId), role: "admin"})
         if (isAdmin) {
-            const users = await User.find({}).select("-password")
+            const users = await User.find({}, {projection: {password: 0}})
             response(res, 200, {users: users})
         } else {
             response(res, 409, {message: "Access denied"})
@@ -212,8 +215,7 @@ export const getUserEmail = async (req: Request, res: Response) => {
     try {
         let user: any = await User.findOne({email: email})
         if (user) {
-            // setTimeout(()=>{
-            response(res, 200, {user: {avatar: user._doc.avatar}})
+            response(res, 200, {user: {avatar: user.avatar}})
 
         } else {
             response(res, 404, "This email not yet registered")
@@ -363,7 +365,7 @@ export const updateProfile = async (req: Request, res: Response) => {
                 user.email = email
             }
 
-            let doc = await User.update({_id: new ObjectId(req.user.userId)},
+            let doc = await User.findAndUpdate({_id: new ObjectId(req.user.userId)},
                 {
                     $set: user
                 }
@@ -410,7 +412,7 @@ export const uploadProfilePhoto = (req: Request, res: Response) => {
             let cloudImage = await uploadImage(newPath)
             if (cloudImage.secure_url) {
                 let user: any = await User.findOne({_id: new ObjectId(req.user.userId)})
-                let isUpdated = await User.updateOne({_id: user._id}, {$set: {avatar: cloudImage.secure_url}})
+                let isUpdated = await User.findAndUpdate({_id: user._id}, {$set: {avatar: cloudImage.secure_url}})
                 if (isUpdated) {
                     fs.rm(newPath, () => {
                     })
@@ -456,7 +458,7 @@ export const uploadProfileCoverPhoto = (req: Request, res: Response) => {
                         if (user) {
                             let cloudImage = await uploadImage(newPath)
                             if (cloudImage.secure_url) {
-                                let isUpdated = await User.update({_id: user._id}, {$set: {cover: cloudImage.secure_url}})
+                                let isUpdated = await User.findAndUpdate({_id: user._id}, {$set: {cover: cloudImage.secure_url}})
                                 if (isUpdated) {
                                     fs.rm(newPath, () => {
                                     })
@@ -665,7 +667,7 @@ export const changePassword = async (req: Request, res: Response) => {
                 errorConsole(err)
                 response(res, 500, "Password reset fail. Try again")
             }
-            let isUpdated = await User.updateOne(
+            let isUpdated = await User.findOneAndUpdate(
                 {_id: userId},
                 {$set: {password: hash}}
             )

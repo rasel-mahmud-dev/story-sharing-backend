@@ -39,7 +39,7 @@ const router = express.Router();
 
 try {
     if (process.env.NODE_ENV === "development") {
-        // const routes = require("../src/routers")
+        // const routes = require("../src/routes")
         // router.use(routes)
     } else {
         const routes = require("../dist/routers")
@@ -60,7 +60,10 @@ app.use(bodyParser.json());
 app.use('/.netlify/functions/api', router);  // path must route to lambda
 
 
-let CONNECTION_URI = process.env.NODE_ENV === "development" ? "mongodb://127.0.0.1:27017/dev-story" : process.env.MONGODB_URI
+let CONNECTION_URI = process.env.MONGODB_URI
+
+
+console.log(CONNECTION_URI)
 
 mongoose.connect(CONNECTION_URI).then(r => {
     console.log("database connected")

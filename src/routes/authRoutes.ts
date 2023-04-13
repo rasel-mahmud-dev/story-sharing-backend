@@ -11,7 +11,8 @@ const router: any = express.Router()
 router.get("/auth/user/:email", controllers.authController.getUserEmail)
 
 router.post("/auth/login", controllers.authController.loginUser)
-router.get("/users/:id", controllers.authController.getUser)
+
+router.get("/users/:username", controllers.authController.getUser)
 
 router.post("/auth/users", getAuthID, controllers.authController.getUsers)
 

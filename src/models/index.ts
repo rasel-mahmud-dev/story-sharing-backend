@@ -1,4 +1,3 @@
-import "./User"
 import "./Post"
 import "./Comment"
 import "./Like"
